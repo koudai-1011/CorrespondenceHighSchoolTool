@@ -1,0 +1,73 @@
+// サジェスト用のタグデータ
+// 読み仮名や略称も含めて検索できるように
+export const SUGGESTIONS: Record<string, Array<{name: string, aliases: string[]}>> = {
+  '漫画・アニメ': [
+    { name: '鬼滅の刃', aliases: ['きめつのやいば', 'きめつ', 'kimetsunoyaiba'] },
+    { name: '呪術廻戦', aliases: ['じゅじゅつかいせん', 'じゅじゅ', 'jujutsukaisen'] },
+    { name: 'ONE PIECE', aliases: ['ワンピース', 'わんぴーす', 'ワンピ', 'わんぴ', 'onepiece'] },
+    { name: 'SPY×FAMILY', aliases: ['スパイファミリー', 'すぱいふぁみりー', 'スパファミ', 'spyfamily'] },
+    { name: 'チェンソーマン', aliases: ['ちぇんそーまん', 'チェンソー', 'ちぇんそー', 'chainsawman'] },
+    { name: '進撃の巨人', aliases: ['しんげきのきょじん', 'しんげき', 'shingekinokyojin'] },
+    { name: '僕のヒーローアカデミア', aliases: ['ぼくのひーろーあかでみあ', 'ヒロアカ', 'ひろあか', 'heroaca'] },
+    { name: 'ハイキュー!!', aliases: ['はいきゅー', 'haikyu'] },
+    { name: 'ブルーロック', aliases: ['ぶるーろっく', 'bluelock'] },
+    { name: '推しの子', aliases: ['おしのこ', 'oshinoko'] },
+  ],
+  'ゲーム': [
+    { name: 'Apex Legends', aliases: ['エーペックス', 'えーぺっくす', 'エペ', 'えぺ', 'apex'] },
+    { name: 'VALORANT', aliases: ['ヴァロラント', 'ゔぁろらんと', 'ヴァロ', 'ゔぁろ', 'valorant'] },
+    { name: '原神', aliases: ['げんしん', 'genshin'] },
+    { name: 'スプラトゥーン', aliases: ['すぷらとぅーん', 'スプラ', 'すぷら', 'splatoon'] },
+    { name: 'ポケモン', aliases: ['ぽけもん', 'pokemon'] },
+    { name: 'マインクラフト', aliases: ['まいんくらふと', 'マイクラ', 'まいくら', 'minecraft'] },
+    { name: 'あつまれ どうぶつの森', aliases: ['あつもり', 'あつ森', 'どう森', 'animalcrossing'] },
+    { name: 'ゼルダの伝説', aliases: ['ぜるだのでんせつ', 'ゼルダ', 'zelda'] },
+    { name: 'FF14', aliases: ['ファイナルファンタジー', 'ふぁいなるふぁんたじー', 'ff14'] },
+    { name: 'プロセカ', aliases: ['ぷろせか', 'プロジェクトセカイ', 'ぷろじぇくとせかい', 'proseka'] },
+  ],
+  '音楽': [
+    { name: 'YOASOBI', aliases: ['よあそび', 'ヨアソビ', 'yoasobi'] },
+    { name: 'Ado', aliases: ['アド', 'あど', 'ado'] },
+    { name: 'Vaundy', aliases: ['バウンディ', 'ばうんでぃ', 'vaundy'] },
+    { name: 'Mrs. GREEN APPLE', aliases: ['ミセス', 'みせす', 'mrsgreenapple'] },
+    { name: 'Official髭男dism', aliases: ['ヒゲダン', 'ひげだん', 'officialhigedandism'] },
+    { name: '米津玄師', aliases: ['よねづけんし', 'kenshiyonezu'] },
+    { name: 'King Gnu', aliases: ['キングヌー', 'きんぐぬー', 'kinggnu'] },
+    { name: 'back number', aliases: ['バックナンバー', 'ばっくなんばー', 'backnumber'] },
+    { name: '優里', aliases: ['ゆうり', 'yuuri'] },
+    { name: 'Saucy Dog', aliases: ['サウシードッグ', 'さうしーどっぐ', 'saucydog'] },
+  ],
+  'スポーツ': [
+    { name: 'サッカー', aliases: ['さっかー', 'soccer'] },
+    { name: '野球', aliases: ['やきゅう', 'baseball'] },
+    { name: 'バスケ', aliases: ['ばすけ', 'バスケットボール', 'basketball'] },
+    { name: 'バレーボール', aliases: ['ばれーぼーる', 'volleyball'] },
+    { name: 'テニス', aliases: ['てにす', 'tennis'] },
+    { name: 'バドミントン', aliases: ['ばどみんとん', 'badminton'] },
+    { name: '陸上', aliases: ['りくじょう', 'trackandfield'] },
+    { name: '卓球', aliases: ['たっきゅう', 'tabletennis'] },
+    { name: 'ダンス', aliases: ['だんす', 'dance'] },
+    { name: '水泳', aliases: ['すいえい', 'swimming'] },
+  ],
+  '趣味': [
+    { name: '読書', aliases: ['どくしょ', 'reading'] },
+    { name: '映画鑑賞', aliases: ['えいがかんしょう', 'movie'] },
+    { name: '料理', aliases: ['りょうり', 'cooking'] },
+    { name: '旅行', aliases: ['りょこう', 'travel'] },
+    { name: 'カメラ', aliases: ['かめら', 'camera'] },
+    { name: 'イラスト', aliases: ['いらすと', 'illustration'] },
+    { name: 'カラオケ', aliases: ['からおけ', 'karaoke'] },
+    { name: 'カフェ巡り', aliases: ['かふぇめぐり', 'cafe'] },
+    { name: 'ショッピング', aliases: ['しょっぴんぐ', 'shopping'] },
+    { name: 'DIY', aliases: ['diy'] },
+  ],
+  'その他': [
+    { name: '勉強', aliases: ['べんきょう', 'study'] },
+    { name: 'プログラミング', aliases: ['ぷろぐらみんぐ', 'programming'] },
+    { name: 'ボランティア', aliases: ['ぼらんてぃあ', 'volunteer'] },
+    { name: '生徒会', aliases: ['せいとかい', 'studentcouncil'] },
+    { name: 'アルバイト', aliases: ['あるばいと', 'parttimejob'] },
+  ]
+};
+
+export const CATEGORIES = ['漫画・アニメ', 'ゲーム', '音楽', 'スポーツ', '趣味', 'その他'];
