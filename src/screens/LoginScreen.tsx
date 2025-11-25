@@ -1,173 +1,129 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
-import { Button, Text, TextInput } from 'react-native-paper';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../config/firebase';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { Button, Text } from 'react-native-paper';
+import { loginWithGoogle, getCurrentUser, subscribeToAuthState } from '../services/authService';
+import { getUserProfile } from '../services/authService';
 import { COLORS } from '../constants/AppConfig';
 
 export default function LoginScreen({ navigation }: { navigation: any }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
 
-  const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('エラー', 'メールアドレスとパスワードを入力してください');
-      return;
-    }
+  useEffect(() => {
+    // 既に認証済みのユーザーをチェック
+    const unsubscribe = subscribeToAuthState(async (user) => {
+      if (user) {
+        // ユーザーが認証済みの場合、プロフィール確認後に画面遷移
+        const userProfile = await getUserProfile(user.uid);
+        if (userProfile) {
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
+        } else {
+          // プロフィールがない場合はプロフィール作成画面へ
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'ProfileCreation' }],
+          });
+        }
+      }
+      setIsChecking(false);
+    });
 
+    return () => unsubscribe();
+  }, [navigation]);
+
+  const handleGoogleLogin = async () => {
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+      const result = await loginWithGoogle();
 
-      // Firestoreからユーザー情報を取得
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      
-      if (userDoc.exists()) {
-        // ユーザー情報が存在する場合はホーム画面へ
-        navigation.navigate('Home');
+      if (result.success) {
+        // ログイン成功 - プロフィール作成画面へ
+        const user = getCurrentUser();
+        if (user) {
+          const userProfile = await getUserProfile(user.uid);
+          if (userProfile) {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Home' }],
+            });
+          } else {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'ProfileCreation' }],
+            });
+          }
+        }
       } else {
-        // プロフィールが未作成の場合はプロフィール作成画面へ
-        navigation.navigate('ProfileCreation');
+        Alert.alert('ログイン失敗', result.error || 'Google ログインに失敗しました');
       }
     } catch (error: any) {
-      console.error('Login error:', error);
-      let errorMessage = 'ログインに失敗しました';
-      
-      if (error.code === 'auth/user-not-found') {
-        errorMessage = 'ユーザーが見つかりません';
-      } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'パスワードが正しくありません';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'メールアドレスの形式が正しくありません';
-      }
-      
-      Alert.alert('ログインエラー', errorMessage);
+      console.error('Google login error:', error);
+      Alert.alert('エラー', 'ログイン処理中にエラーが発生しました');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSignUp = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('エラー', 'メールアドレスとパスワードを入力してください');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('エラー', 'パスワードは6文字以上で設定してください');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Firestoreにユーザードキュメントを作成
-      await setDoc(doc(db, 'users', user.uid), {
-        email: user.email,
-        createdAt: new Date().toISOString(),
-      });
-
-      // プロフィール作成画面へ
-      navigation.navigate('ProfileCreation');
-    } catch (error: any) {
-      console.error('Sign up error:', error);
-      let errorMessage = '新規登録に失敗しました';
-      
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'このメールアドレスは既に使用されています';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'メールアドレスの形式が正しくありません';
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'パスワードが弱すぎます';
-      }
-      
-      Alert.alert('登録エラー', errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (isChecking) {
+    return (
+      <View style={[styles.container, styles.centerContainer]}>
+        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+      </View>
+    );
+  }
 
   return (
-    <div style={{ 
-      height: '100vh', 
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #00BCD4 0%, #0097A7 100%)'
-    }}>
-      <View style={styles.container}>
-        <View style={styles.logoContainer}>
-          <Text variant="displaySmall" style={styles.appName}>
-            通信制高校ツール
-          </Text>
-          <Text variant="bodyLarge" style={styles.tagline}>
-            つながりを、自分のペースで
-          </Text>
-        </View>
-
-        <View style={styles.formContainer}>
-          <TextInput
-            label="メールアドレス"
-            value={email}
-            onChangeText={setEmail}
-            mode="outlined"
-            style={styles.input}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            disabled={loading}
-          />
-          
-          <TextInput
-            label="パスワード"
-            value={password}
-            onChangeText={setPassword}
-            mode="outlined"
-            style={styles.input}
-            secureTextEntry
-            disabled={loading}
-          />
-
-          <Button 
-            mode="contained" 
-            onPress={isSignUp ? handleSignUp : handleLogin}
-            style={styles.button}
-            loading={loading}
-            disabled={loading}
-          >
-            {isSignUp ? '新規登録' : 'ログイン'}
-          </Button>
-
-          <Button 
-            mode="text" 
-            onPress={() => setIsSignUp(!isSignUp)}
-            style={styles.switchButton}
-            disabled={loading}
-            textColor="#FFFFFF"
-          >
-            {isSignUp ? 'アカウントをお持ちの方はログイン' : '新規登録はこちら'}
-          </Button>
-        </View>
-
-        <Text variant="bodySmall" style={styles.note}>
-          ※ Firebase連携版
+    <View style={styles.container}>
+      <View style={styles.logoContainer}>
+        <Text variant="displaySmall" style={styles.appName}>
+          通信制高校ツール
+        </Text>
+        <Text variant="bodyLarge" style={styles.tagline}>
+          つながりを、自分のペースで
         </Text>
       </View>
-    </div>
+
+      <View style={styles.formContainer}>
+        <Text variant="bodyMedium" style={styles.description}>
+          Google アカウントでログインします
+        </Text>
+
+        <Button
+          mode="contained"
+          onPress={handleGoogleLogin}
+          style={styles.googleButton}
+          loading={loading}
+          disabled={loading}
+          icon="google"
+        >
+          Google でログイン
+        </Button>
+
+        <Text variant="bodySmall" style={styles.note}>
+          ※ 初回ログイン時は自動でアカウントが作成されます
+        </Text>
+      </View>
+
+      <Text variant="bodySmall" style={styles.footer}>
+        Firebase × Google Sign-In
+      </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     alignItems: 'center',
-    padding: 32,
-    width: '100%',
-    maxWidth: 400,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    backgroundColor: 'linear-gradient(135deg, #00BCD4 0%, #0097A7 100%)',
+  },
+  centerContainer: {
+    justifyContent: 'center',
   },
   logoContainer: {
     alignItems: 'center',
@@ -186,24 +142,28 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: '100%',
+    maxWidth: 400,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 16,
     padding: 24,
     marginBottom: 24,
   },
-  input: {
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
+  description: {
+    textAlign: 'center',
+    marginBottom: 24,
+    color: '#333333',
   },
-  button: {
-    marginTop: 8,
-    paddingVertical: 6,
-    backgroundColor: COLORS.PRIMARY,
-  },
-  switchButton: {
-    marginTop: 8,
+  googleButton: {
+    marginVertical: 12,
+    paddingVertical: 8,
+    backgroundColor: '#4285F4',
   },
   note: {
+    marginTop: 16,
+    textAlign: 'center',
+    color: '#999999',
+  },
+  footer: {
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
   },
