@@ -10,7 +10,7 @@ import {
     AuthError,
 } from 'firebase/auth';
 import { auth, db } from '../config/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { User } from '../types/user';
 
 // Google認証プロバイダーの初期化
@@ -86,30 +86,37 @@ const loginWithGooglePopup = async (
 };
 
 /**
- * 新規ユーザーの作成または既存ユーザーの更新
+ * 新規ユーザーの作成または既存ユーザーの更新（エラーハンドリング追加）
  */
 const handleNewUser = async (
     userId: string,
     firebaseUser: FirebaseUser,
     userData?: Partial<User>
-) => {
-    const userRef = doc(db, 'users', userId);
-    const userSnap = await getDoc(userRef);
+): Promise<{ success: boolean; error?: string }> => {
+    try {
+        const userRef = doc(db, 'users', userId);
+        const userSnap = await getDoc(userRef);
 
-    // 新規ユーザーの場合のみ作成
-    if (!userSnap.exists()) {
-        await setDoc(userRef, {
-            uid: userId,
-            email: firebaseUser.email || '',
-            nickname: firebaseUser.displayName || 'Anonymous',
-            profileImageUrl: firebaseUser.photoURL || '',
-            ...userData,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        });
-    } else {
-        // 既存ユーザーは updatedAt のみ更新
-        await setDoc(userRef, { updatedAt: new Date() }, { merge: true });
+        // 新規ユーザーの場合のみ作成
+        if (!userSnap.exists()) {
+            await setDoc(userRef, {
+                uid: userId,
+                email: firebaseUser.email || '',
+                nickname: firebaseUser.displayName || 'Anonymous',
+                profileImageUrl: firebaseUser.photoURL || '',
+                ...userData,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            });
+        } else {
+            // 既存ユーザーは updatedAt のみ更新
+            await setDoc(userRef, { updatedAt: new Date() }, { merge: true });
+        }
+        
+        return { success: true };
+    } catch (error) {
+        console.error('Error handling new user:', error);
+        return { success: false, error: 'ユーザー情報の保存に失敗しました' };
     }
 };
 
@@ -203,7 +210,7 @@ export const updateUserProfile = async (
 };
 
 /**
- * ユーザーアカウントを削除
+ * ユーザーアカウントを削除（改善版）
  */
 export const deleteUserAccount = async (userId: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -212,13 +219,31 @@ export const deleteUserAccount = async (userId: string): Promise<{ success: bool
             return { success: false, error: 'ユーザーがログインしていません' };
         }
 
-        // Authアカウントを削除
+        // 1. Firestoreのユーザードキュメントを削除
+        try {
+            const userRef = doc(db, 'users', userId);
+            await deleteDoc(userRef);
+        } catch (firestoreError) {
+            console.error('Error deleting Firestore user data:', firestoreError);
+            // Firestoreの削除に失敗してもAuthアカウントの削除は続行
+        }
+
+        // 2. Authアカウントを削除
         await user.delete();
 
         return { success: true };
     } catch (error) {
         const authError = error as AuthError;
         console.error('Error deleting account:', authError);
+        
+        // 再認証が必要な場合のエラーメッセージ
+        if (authError.code === 'auth/requires-recent-login') {
+            return { 
+                success: false, 
+                error: 'セキュリティのため、再度ログインしてからアカウントを削除してください' 
+            };
+        }
+        
         return { success: false, error: getAuthErrorMessage(authError.code) };
     }
 };
