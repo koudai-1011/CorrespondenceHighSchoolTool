@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Button, Text, TextInput, Avatar, SegmentedButtons, RadioButton, Portal, Modal } from 'react-native-paper';
 import { useRegistrationStore } from '../stores/registrationStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { COLORS, PREFECTURES, GRADES, CAREER_PATHS, AGES, CORRESPONDENCE_SCHOOLS } from '../constants/AppConfig';
+import { auth, db } from '../config/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function ProfileCreationScreen({ navigation, route }: { navigation: any; route: any }) {
   const isEditMode = route?.params?.isEditMode ?? false;
@@ -30,33 +32,85 @@ export default function ProfileCreationScreen({ navigation, route }: { navigatio
   const [showAgeModal, setShowAgeModal] = useState(false);
   const [schoolSuggestions, setSchoolSuggestions] = useState<string[]>([]);
   const [showSchoolSuggestions, setShowSchoolSuggestions] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const { setExamParticipation } = useSettingsStore(); // 追加
+  const { setExamParticipation } = useSettingsStore();
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // バリデーション
     if (!userId.trim() || !nickname.trim() || !schoolName.trim() || !prefecture || !grade || !age || !careerPath) {
-      alert('すべての項目を入力してください');
+      Alert.alert('エラー', 'すべての項目を入力してください');
       return;
     }
 
     // ユーザーIDの形式チェック
     const userIdRegex = /^[a-zA-Z0-9_]{4,20}$/;
     if (!userIdRegex.test(userId)) {
-      alert('ユーザーIDは4〜20文字の英数字とアンダースコアのみ使用できます');
+      Alert.alert('エラー', 'ユーザーIDは4〜20文字の英数字とアンダースコアのみ使用できます');
       return;
     }
 
     if (isEditMode) {
-      navigation.goBack();
+      // 編集モードの場合はFirestoreを更新
+      if (auth.currentUser) {
+        setSaving(true);
+        try {
+          await setDoc(doc(db, 'users', auth.currentUser.uid), {
+            userId,
+            nickname,
+            schoolName,
+            prefecture,
+            grade,
+            age,
+            careerPath,
+            themeColor,
+            updatedAt: new Date().toISOString(),
+          }, { merge: true });
+          navigation.goBack();
+        } catch (error) {
+          console.error('Error updating profile:', error);
+          Alert.alert('エラー', 'プロフィールの更新に失敗しました');
+        } finally {
+          setSaving(false);
+        }
+      }
     } else {
-      // 大学進学の場合は学習プロフィール入力へ
-      if (careerPath === '大学進学') {
-        navigation.navigate('StudyProfileInput');
+      // 新規登録の場合
+      if (auth.currentUser) {
+        setSaving(true);
+        try {
+          // Firestoreにユーザープロフィールを保存
+          await setDoc(doc(db, 'users', auth.currentUser.uid), {
+            userId,
+            nickname,
+            schoolName,
+            prefecture,
+            grade,
+            age,
+            careerPath,
+            themeColor,
+            email: auth.currentUser.email,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+
+          // 大学進学の場合は学習プロフィール入力へ
+          if (careerPath === '大学進学') {
+            navigation.navigate('StudyProfileInput');
+          } else {
+            // それ以外は受験機能をOFFにして次へ
+            setExamParticipation(false);
+            navigation.navigate('CommunicationDiagnosis');
+          }
+        } catch (error) {
+          console.error('Error saving profile:', error);
+          Alert.alert('エラー', 'プロフィールの保存に失敗しました');
+        } finally {
+          setSaving(false);
+        }
       } else {
-        // それ以外は受験機能をOFFにして次へ
-        setExamParticipation(false);
-        navigation.navigate('CommunicationDiagnosis');
+        Alert.alert('エラー', 'ログインしてください');
+        navigation.navigate('Login');
       }
     }
   };
@@ -249,7 +303,8 @@ export default function ProfileCreationScreen({ navigation, route }: { navigatio
           mode="contained" 
           onPress={handleNext}
           style={[styles.button, { backgroundColor: themeColor || COLORS.PRIMARY }]}
-          disabled={!isValid}
+          disabled={!isValid || saving}
+          loading={saving}
         >
           {isEditMode ? '保存' : '次へ進む'}
         </Button>

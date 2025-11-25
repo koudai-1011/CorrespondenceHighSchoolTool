@@ -325,8 +325,6 @@ export default function ChatScreen({ route, navigation }: { route: any, navigati
           )}
           
           <View style={styles.inputRow}>
-            <IconButton icon="plus" size={24} iconColor={COLORS.TEXT_SECONDARY} style={{ margin: 0 }} />
-            <IconButton icon="camera" size={24} iconColor={COLORS.TEXT_SECONDARY} style={{ margin: 0 }} />
             <IconButton icon="image" size={24} iconColor={COLORS.TEXT_SECONDARY} style={{ margin: 0 }} />
             
             <TextInput
@@ -392,7 +390,7 @@ export default function ChatScreen({ route, navigation }: { route: any, navigati
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#8FB8E6', // LINE風の背景色
+    backgroundColor: '#FFFFFF', // 白色背景
   },
   dateSeparator: {
     alignItems: 'center',
@@ -447,7 +445,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
   },
   myBubble: {
-    backgroundColor: '#8DE055', // LINE風の緑
+    backgroundColor: COLORS.PRIMARY, // ターコイズ
     borderTopRightRadius: 4,
   },
   partnerBubble: {
@@ -462,7 +460,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   myMessageText: {
-    color: '#000',
+    color: '#FFFFFF', // 白文字
   },
   partnerMessageText: {
     color: '#000',
