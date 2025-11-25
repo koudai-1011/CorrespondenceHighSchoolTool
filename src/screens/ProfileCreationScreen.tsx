@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Button, Text, TextInput, Avatar, SegmentedButtons, RadioButton, Portal, Modal } from 'react-native-paper';
 import { useRegistrationStore } from '../stores/registrationStore';
+import { useSettingsStore } from '../stores/settingsStore';
 import { COLORS, PREFECTURES, GRADES, CAREER_PATHS, AGES, CORRESPONDENCE_SCHOOLS } from '../constants/AppConfig';
 
 export default function ProfileCreationScreen({ navigation, route }: { navigation: any; route: any }) {
@@ -30,6 +31,8 @@ export default function ProfileCreationScreen({ navigation, route }: { navigatio
   const [schoolSuggestions, setSchoolSuggestions] = useState<string[]>([]);
   const [showSchoolSuggestions, setShowSchoolSuggestions] = useState(false);
 
+  const { setExamParticipation } = useSettingsStore(); // 追加
+
   const handleNext = () => {
     // バリデーション
     if (!userId.trim() || !nickname.trim() || !schoolName.trim() || !prefecture || !grade || !age || !careerPath) {
@@ -47,7 +50,14 @@ export default function ProfileCreationScreen({ navigation, route }: { navigatio
     if (isEditMode) {
       navigation.goBack();
     } else {
-      navigation.navigate('CommunicationDiagnosis');
+      // 大学進学の場合は学習プロフィール入力へ
+      if (careerPath === '大学進学') {
+        navigation.navigate('StudyProfileInput');
+      } else {
+        // それ以外は受験機能をOFFにして次へ
+        setExamParticipation(false);
+        navigation.navigate('CommunicationDiagnosis');
+      }
     }
   };
 

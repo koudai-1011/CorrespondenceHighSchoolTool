@@ -3,36 +3,53 @@ export const APP_CONFIG = {
 };
 
 export const COLORS = {
-  // メインカラー（水色ベース）
-  PRIMARY: '#00BCD4',        // シアン
-  PRIMARY_LIGHT: '#B2EBF2',  // ライトシアン
-  PRIMARY_DARK: '#00838F',   // ダークシアン
+  // Main Brand Colors
+  PRIMARY: '#00BCD4',       // Turquoise
+  PRIMARY_LIGHT: '#B2EBF2', // Light Turquoise
+  PRIMARY_DARK: '#0097A7',  // Dark Turquoise
+  ACCENT: '#FF4081',        // Pop Pink
+  ACCENT_YELLOW: '#FFEB3B', // Pop Yellow for highlights
   
-  // アクセントカラー
-  ACCENT: '#FF6B9D',         // アクセントピンク
-  ACCENT_LIGHT: '#FFB3D9',   // ライトピンク
+  // Functional Colors
+  BACKGROUND: '#F0F4F8',    // Slightly cool gray/blue background
+  SURFACE: '#FFFFFF',
+  TEXT_PRIMARY: '#263238',  // Dark Blue Grey
+  TEXT_SECONDARY: '#546E7A',
+  TEXT_TERTIARY: '#90A4AE',
+  BORDER: '#CFD8DC',
   
-  // グレースケール
-  BACKGROUND: '#F8FAFC',     // ライトグレー背景
-  SURFACE: '#FFFFFF',        // カード背景
-  TEXT_PRIMARY: '#1E293B',   // ダークグレー
-  TEXT_SECONDARY: '#64748B', // ミディアムグレー
-  TEXT_TERTIARY: '#94A3B8',  // ライトグレー
+  // Status Colors
+  SUCCESS: '#4CAF50',
+  ERROR: '#F44336',
+  WARNING: '#FF9800',
+  INFO: '#2196F3',
   
-  // 状態カラー
-  SUCCESS: '#10B981',
-  WARNING: '#F59E0B',
-  ERROR: '#EF4444',
-  
-  // ユーザーが選択可能なテーマカラー（モダンなパレット）
+  // Theme Colors (kept for reference if needed, but PRIMARY is now fixed to Turquoise)
   THEME_COLORS: [
-    { label: 'シアン', value: '#00BCD4' },
-    { label: 'インディゴ', value: '#5C6BC0' },
-    { label: 'ティール', value: '#26A69A' },
-    { label: 'ピンク', value: '#EC407A' },
-    { label: 'パープル', value: '#AB47BC' },
-    { label: 'オレンジ', value: '#FF7043' },
+    { label: 'ターコイズ', value: '#00BCD4' },
+    { label: 'スカイ', value: '#1D9BF0' },
+    { label: 'ローズ', value: '#F91880' },
+    { label: 'パープル', value: '#7856FF' },
+    { label: 'オレンジ', value: '#FF7A00' },
+    { label: 'グリーン', value: '#00BA7C' },
   ],
+};
+
+export const RADIUS = {
+  SMALL: 8,
+  MEDIUM: 16,
+  LARGE: 24,
+  XLARGE: 32,
+  ROUND: 999,
+};
+
+export const SPACING = {
+  XS: 4,
+  S: 8,
+  M: 16,
+  L: 24,
+  XL: 32,
+  XXL: 48,
 };
 
 export const PREFECTURES = [

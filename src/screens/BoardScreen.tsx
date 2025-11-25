@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert, ScrollView, Dimensions } from 'react-native';
 import { Text, Card, Avatar, Chip, FAB, SegmentedButtons, Portal, Modal, TextInput, Button, Dialog, Paragraph, IconButton, Divider } from 'react-native-paper';
 import { COLORS } from '../constants/AppConfig';
 import { useRecruitmentStore, RecruitmentCategory, RecruitmentPost } from '../stores/recruitmentStore';
 import { useModerationStore } from '../stores/moderationStore';
 import { checkContent } from '../utils/contentModeration';
+import { modernStyles } from '../styles/modernStyles';
 
 export default function BoardScreen({ navigation }: { navigation: any }) {
   const { recruitments, addRecruitment, joinRecruitment, leaveRecruitment, isUrgent, isNew } = useRecruitmentStore();
@@ -98,254 +99,390 @@ export default function BoardScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  const getCategoryColor = (cat: RecruitmentCategory) => {
-    switch (cat) {
-      case 'game': return '#E91E63';
-      case 'study': return '#2196F3';
-      case 'event': return '#4CAF50';
-      case 'chat': return '#FF9800';
-      default: return '#9E9E9E';
-    }
-  };
+  const categories: { label: string, value: RecruitmentCategory | 'all' }[] = [
+    { label: 'すべて', value: 'all' },
+    { label: 'ゲーム', value: 'game' },
+    { label: '勉強', value: 'study' },
+    { label: 'イベント', value: 'event' },
+    { label: '雑談', value: 'chat' },
+    { label: 'その他', value: 'other' },
+  ];
 
   const renderRecruitment = ({ item }: { item: RecruitmentPost }) => {
-    const isJoined = item.currentParticipants.includes('user1');
-    const isFull = item.maxParticipants ? item.currentParticipants.length >= item.maxParticipants : false;
+    const urgent = isUrgent(item);
+    const brandNew = isNew(item);
 
     return (
-      <Card style={styles.card} onPress={() => navigation.navigate('RecruitmentDetail', { recruitmentId: item.id })}>
-        <Card.Content>
-          <View style={styles.header}>
+      <TouchableOpacity 
+        style={modernStyles.card}
+        onPress={() => navigation.navigate('RecruitmentDetail', { recruitment: item })}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.headerLeft}>
             <Chip 
-              style={{ backgroundColor: getCategoryColor(item.category), marginRight: 8 }}
-              textStyle={{ color: 'white', fontSize: 12 }}
+              style={[styles.categoryChip, { backgroundColor: COLORS.PRIMARY_LIGHT }]}
+              textStyle={{ color: COLORS.PRIMARY, fontSize: 12, fontWeight: '600' }}
             >
               {getCategoryLabel(item.category)}
             </Chip>
-            <Text variant="titleMedium" style={styles.titleText}>{item.title}</Text>
-            {isUrgent(item) && (
-              <Chip style={styles.badgeUrgent} textStyle={styles.badgeText}>急募</Chip>
+            {urgent && (
+              <Chip style={[styles.statusChip, { backgroundColor: '#FFEBEE' }]} textStyle={{ color: COLORS.ERROR, fontSize: 11 }}>
+                募集中
+              </Chip>
             )}
-            {isNew(item) && (
-              <Chip style={styles.badgeNew} textStyle={styles.badgeText}>NEW</Chip>
-            )}
-          </View>
-
-          <View style={styles.infoRow}>
-            <View style={styles.infoItem}>
-              <IconButton icon="calendar-clock" size={16} style={styles.infoIcon} />
-              <Text variant="bodyMedium">{formatTime(item.eventDate)}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <IconButton icon="map-marker" size={16} style={styles.infoIcon} />
-              <Text variant="bodyMedium">{item.location}</Text>
-            </View>
-          </View>
-
-          <Paragraph style={styles.description}>{item.description}</Paragraph>
-
-          <Divider style={styles.divider} />
-
-          <View style={styles.footer}>
-            <View style={styles.participants}>
-              <IconButton icon="account-group" size={20} style={styles.infoIcon} />
-              <Text variant="bodyMedium">
-                {item.currentParticipants.length} / {item.maxParticipants || '∞'} 人参加中
-              </Text>
-            </View>
-            
-            {isJoined ? (
-              <Button 
-                mode="outlined" 
-                onPress={() => leaveRecruitment(item.id, 'user1')}
-                textColor={COLORS.ERROR}
-              >
-                キャンセル
-              </Button>
-            ) : (
-              <Button 
-                mode="contained" 
-                onPress={() => joinRecruitment(item.id, 'user1')}
-                disabled={isFull}
-                buttonColor={isFull ? COLORS.TEXT_TERTIARY : COLORS.PRIMARY}
-              >
-                {isFull ? '満員' : '参加する'}
-              </Button>
+            {brandNew && (
+              <Chip style={[styles.statusChip, { backgroundColor: '#E3F2FD' }]} textStyle={{ color: COLORS.PRIMARY, fontSize: 11 }}>
+                NEW
+              </Chip>
             )}
           </View>
-        </Card.Content>
-      </Card>
+          <Text style={styles.dateText}>{formatTime(item.eventDate)}</Text>
+        </View>
+
+        <Text style={modernStyles.headingSecondary}>{item.title}</Text>
+        
+        <View style={styles.infoRow}>
+          <View style={styles.infoItem}>
+            <IconButton icon="map-marker-outline" size={16} iconColor={COLORS.TEXT_SECONDARY} style={styles.infoIcon} />
+            <Text style={styles.infoText}>{item.location}</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <IconButton icon="account-group-outline" size={16} iconColor={COLORS.TEXT_SECONDARY} style={styles.infoIcon} />
+            <Text style={styles.infoText}>
+              {item.currentParticipants.length} / {item.maxParticipants || '∞'} 人
+            </Text>
+          </View>
+        </View>
+
+        <Text style={[styles.description, { fontSize: 14, lineHeight: 20 }]} numberOfLines={2}>
+          {item.description}
+        </Text>
+
+        <View style={styles.cardFooter}>
+          <View style={styles.participantAvatars}>
+            {item.currentParticipants.slice(0, 3).map((p, i) => (
+              <Avatar.Image 
+                key={i} 
+                size={24} 
+                source={{ uri: `https://picsum.photos/seed/${p}/200` }} 
+                style={[styles.miniAvatar, { marginLeft: i > 0 ? -8 : 0 }]}
+              />
+            ))}
+            {item.currentParticipants.length > 3 && (
+              <View style={[styles.miniAvatar, styles.moreAvatar]}>
+                <Text style={styles.moreAvatarText}>+{item.currentParticipants.length - 3}</Text>
+              </View>
+            )}
+          </View>
+          <Button 
+            mode="contained" 
+            compact 
+            style={modernStyles.buttonPrimary}
+            labelStyle={{ fontSize: 12 }}
+            onPress={() => navigation.navigate('RecruitmentDetail', { recruitment: item })}
+          >
+            詳細を見る
+          </Button>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const pagerRef = React.useRef<ScrollView>(null);
+  const categoryScrollRef = React.useRef<ScrollView>(null);
+  const tabMeasurements = React.useRef<{ [key: string]: { x: number, width: number } }>({});
+  const { width } = Dimensions.get('window');
+
+  // カテゴリ変更時にページャーとタブをスクロール
+  React.useEffect(() => {
+    const index = categories.findIndex(c => c.value === filterCategory);
+    if (index !== -1 && pagerRef.current) {
+      pagerRef.current.scrollTo({ x: index * width, animated: true });
+      
+      // タブをスクロール
+      if (categoryScrollRef.current) {
+        const measurement = tabMeasurements.current[filterCategory];
+        if (measurement) {
+          const scrollX = measurement.x - width / 2 + measurement.width / 2;
+          categoryScrollRef.current.scrollTo({ x: Math.max(0, scrollX), animated: true });
+        }
+      }
+    }
+  }, [filterCategory, width]);
+
+  const renderCategoryPage = (catValue: RecruitmentCategory | 'all') => {
+    const pageRecruitments = recruitments.filter(rec => 
+      catValue === 'all' || rec.category === catValue
+    );
+
+    return (
+      <View style={{ width, flex: 1 }}>
+        <FlatList
+          data={pageRecruitments}
+          renderItem={renderRecruitment}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+          style={{ flex: 1 }}
+        />
+      </View>
     );
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: COLORS.BACKGROUND, position: 'relative' }}>
-      <View style={{ padding: 16, paddingBottom: 0 }}>
-        <Text variant="headlineMedium" style={styles.pageTitle}>募集掲示板</Text>
-        <Text variant="bodyMedium" style={styles.pageSubtitle}>
-          ゲームや勉強、イベントの仲間を見つけよう
-        </Text>
+    <View style={modernStyles.container}>
+      <View style={styles.header}>
+        <Text style={modernStyles.headingPrimary}>募集掲示板</Text>
+        <IconButton icon="magnify" iconColor={COLORS.TEXT_PRIMARY} size={24} onPress={() => {}} />
+      </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
-          <SegmentedButtons
-            value={filterCategory}
-            onValueChange={(value) => setFilterCategory(value as RecruitmentCategory | 'all')}
-            buttons={[
-              { value: 'all', label: 'すべて' },
-              { value: 'game', label: 'ゲーム' },
-              { value: 'study', label: '勉強' },
-              { value: 'event', label: 'イベント' },
-              { value: 'chat', label: '雑談' },
-            ]}
-            style={styles.filter}
-          />
+      <View style={styles.filterContainer}>
+        <ScrollView 
+          ref={categoryScrollRef}
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          contentContainerStyle={styles.categoryList}
+        >
+          {categories.map((cat) => (
+            <TouchableOpacity
+              key={cat.value}
+              style={[
+                styles.categoryPill,
+                filterCategory === cat.value && styles.categoryPillActive
+              ]}
+              onPress={() => setFilterCategory(cat.value)}
+              onLayout={(e) => {
+                tabMeasurements.current[cat.value] = {
+                  x: e.nativeEvent.layout.x,
+                  width: e.nativeEvent.layout.width,
+                };
+              }}
+            >
+              <Text style={[
+                styles.categoryPillText,
+                filterCategory === cat.value && styles.categoryPillTextActive
+              ]}>
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
       </View>
 
-      <FlatList
-        data={filteredRecruitments}
-        renderItem={renderRecruitment}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16, paddingTop: 0, paddingBottom: 100 }}
+      <ScrollView
+        ref={pagerRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        decelerationRate="fast"
+        scrollEventThrottle={16}
+        onScrollEndDrag={(e) => {
+          const currentX = e.nativeEvent.contentOffset.x;
+          const currentIndex = categories.findIndex(c => c.value === filterCategory);
+          const startX = currentIndex * width;
+          const diff = currentX - startX;
+          
+          let nextIndex = currentIndex;
+          if (diff > width * 0.2) {
+            nextIndex = Math.min(currentIndex + 1, categories.length - 1);
+          } else if (diff < -width * 0.2) {
+            nextIndex = Math.max(currentIndex - 1, 0);
+          }
+          
+          if (nextIndex !== currentIndex) {
+            setFilterCategory(categories[nextIndex].value);
+          } else {
+            if (pagerRef.current) {
+              pagerRef.current.scrollTo({ x: nextIndex * width, animated: true });
+            }
+          }
+        }}
         style={{ flex: 1 }}
+      >
+        {categories.map((cat) => (
+          <React.Fragment key={cat.value}>
+            {renderCategoryPage(cat.value)}
+          </React.Fragment>
+        ))}
+      </ScrollView>
+
+      <FAB
+        icon="plus"
+        style={styles.fab}
+        color="white"
+        onPress={() => setShowCreateModal(true)}
       />
 
-        <FAB
-          icon="plus"
-          label="募集する"
-          style={styles.fab}
-          onPress={() => setShowCreateModal(true)}
-        />
+      <Portal>
+        <Modal
+          visible={showCreateModal}
+          onDismiss={() => setShowCreateModal(false)}
+          contentContainerStyle={styles.modal}
+        >
+          <View style={styles.modalHeader}>
+            <Text style={modernStyles.headingSecondary}>募集を作成</Text>
+            <IconButton icon="close" onPress={() => setShowCreateModal(false)} />
+          </View>
 
-        <Portal>
-          <Modal
-            visible={showCreateModal}
-            onDismiss={() => setShowCreateModal(false)}
-            contentContainerStyle={styles.modal}
-          >
-            <ScrollView>
-              <Text variant="titleLarge" style={styles.modalTitle}>募集を作成</Text>
-
-              {moderationMessage && (
-                <View style={styles.warningBox}>
-                  <Text style={styles.warningText}>{moderationMessage}</Text>
-                </View>
-              )}
-
-              <TextInput
-                label="タイトル"
-                value={title}
-                onChangeText={(text) => handleInputChange(text, 'title')}
-                mode="outlined"
-                style={styles.input}
-                error={!isInputValid && !!title}
-              />
-
-              <Text style={styles.label}>カテゴリー</Text>
-              <SegmentedButtons
-                value={category}
-                onValueChange={(value) => setCategory(value as RecruitmentCategory)}
-                buttons={[
-                  { value: 'game', label: 'ゲーム' },
-                  { value: 'study', label: '勉強' },
-                  { value: 'event', label: 'イベント' },
-                ]}
-                style={styles.input}
-              />
-
-              <TextInput
-                label="開催日時 (例: 2023/12/31 19:00)"
-                value={dateStr}
-                onChangeText={setDateStr}
-                mode="outlined"
-                style={styles.input}
-                placeholder="YYYY/MM/DD HH:mm"
-              />
-
-              <TextInput
-                label="場所 (例: Discord, 新宿)"
-                value={location}
-                onChangeText={setLocation}
-                mode="outlined"
-                style={styles.input}
-              />
-
-              <TextInput
-                label="募集人数"
-                value={maxParticipants}
-                onChangeText={setMaxParticipants}
-                mode="outlined"
-                keyboardType="numeric"
-                style={styles.input}
-              />
-
-              <TextInput
-                label="詳細"
-                value={description}
-                onChangeText={(text) => handleInputChange(text, 'description')}
-                mode="outlined"
-                multiline
-                numberOfLines={4}
-                style={styles.input}
-                error={!isInputValid && !!description}
-              />
-
-              <View style={styles.modalActions}>
-                <Button onPress={() => setShowCreateModal(false)}>キャンセル</Button>
-                <Button 
-                  mode="contained" 
-                  onPress={handleCreateRecruitment}
-                  disabled={!isInputValid}
-                >
-                  作成
-                </Button>
+          <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+            {moderationMessage && (
+              <View style={styles.warningBox}>
+                <Text style={styles.warningText}>{moderationMessage}</Text>
               </View>
-            </ScrollView>
-          </Modal>
-        </Portal>
-    </div>
+            )}
+
+            <TextInput
+              label="タイトル"
+              value={title}
+              onChangeText={(text) => handleInputChange(text, 'title')}
+              mode="outlined"
+              style={styles.input}
+              outlineColor={COLORS.BORDER}
+              activeOutlineColor={COLORS.PRIMARY}
+            />
+
+            <TextInput
+              label="詳細"
+              value={description}
+              onChangeText={(text) => handleInputChange(text, 'description')}
+              mode="outlined"
+              multiline
+              numberOfLines={4}
+              style={styles.input}
+              outlineColor={COLORS.BORDER}
+              activeOutlineColor={COLORS.PRIMARY}
+            />
+
+            <TextInput
+              label="開催場所"
+              value={location}
+              onChangeText={setLocation}
+              mode="outlined"
+              style={styles.input}
+              outlineColor={COLORS.BORDER}
+              activeOutlineColor={COLORS.PRIMARY}
+              left={<TextInput.Icon icon="map-marker" />}
+            />
+
+            <TextInput
+              label="日時 (例: 2023/12/31 19:00)"
+              value={dateStr}
+              onChangeText={setDateStr}
+              mode="outlined"
+              style={styles.input}
+              outlineColor={COLORS.BORDER}
+              activeOutlineColor={COLORS.PRIMARY}
+              left={<TextInput.Icon icon="calendar" />}
+            />
+
+            <TextInput
+              label="最大参加人数"
+              value={maxParticipants}
+              onChangeText={setMaxParticipants}
+              keyboardType="numeric"
+              mode="outlined"
+              style={styles.input}
+              outlineColor={COLORS.BORDER}
+              activeOutlineColor={COLORS.PRIMARY}
+              left={<TextInput.Icon icon="account-group" />}
+            />
+
+            <Text style={styles.label}>カテゴリー</Text>
+            <View style={styles.categorySelect}>
+              {categories.filter(c => c.value !== 'all').map((cat) => (
+                <Chip
+                  key={cat.value}
+                  selected={category === cat.value}
+                  onPress={() => setCategory(cat.value as RecruitmentCategory)}
+                  style={[styles.selectChip, category === cat.value && { backgroundColor: COLORS.PRIMARY_LIGHT }]}
+                  textStyle={{ color: category === cat.value ? COLORS.PRIMARY : COLORS.TEXT_SECONDARY }}
+                  showSelectedOverlay
+                >
+                  {cat.label}
+                </Chip>
+              ))}
+            </View>
+
+            <Button 
+              mode="contained" 
+              onPress={handleCreateRecruitment}
+              disabled={!isInputValid || !title || !description || !location || !dateStr}
+              style={[modernStyles.buttonPrimary, { marginTop: 24 }]}
+            >
+              募集する
+            </Button>
+          </ScrollView>
+        </Modal>
+      </Portal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingBottom: 0,
-  },
-  pageTitle: {
-    fontWeight: '700',
-    color: COLORS.TEXT_PRIMARY,
-    marginBottom: 4,
-  },
-  pageSubtitle: {
-    color: COLORS.TEXT_SECONDARY,
-    marginBottom: 16,
-  },
-  filterContainer: {
-    marginBottom: 16,
-  },
-  filter: {
-    minWidth: 400,
-  },
-  card: {
-    marginBottom: 16,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    elevation: 2,
-  },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255,255,255,0.95)',
   },
-  titleText: {
-    fontWeight: '700',
-    flex: 1,
+  filterContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BORDER,
+    backgroundColor: 'white',
+  },
+  categoryList: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  categoryPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.BACKGROUND,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER,
+  },
+  categoryPillActive: {
+    backgroundColor: COLORS.PRIMARY,
+    borderColor: COLORS.PRIMARY,
+  },
+  categoryPillText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.TEXT_SECONDARY,
+  },
+  categoryPillTextActive: {
+    color: 'white',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  categoryChip: {
+    height: 24,
+    alignItems: 'center',
+  },
+  statusChip: {
+    height: 24,
+    alignItems: 'center',
+  },
+  dateText: {
+    fontSize: 12,
+    color: COLORS.TEXT_TERTIARY,
+    fontWeight: '600',
   },
   infoRow: {
     flexDirection: 'row',
-    marginBottom: 12,
     gap: 16,
+    marginBottom: 8,
   },
   infoItem: {
     flexDirection: 'row',
@@ -354,76 +491,96 @@ const styles = StyleSheet.create({
   infoIcon: {
     margin: 0,
     marginRight: 4,
-    width: 20,
-    height: 20,
+    width: 16,
+    height: 16,
+  },
+  infoText: {
+    fontSize: 13,
+    color: COLORS.TEXT_SECONDARY,
   },
   description: {
     color: COLORS.TEXT_SECONDARY,
     marginBottom: 12,
-    lineHeight: 20,
   },
-  divider: {
-    marginVertical: 12,
-  },
-  footer: {
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.BORDER,
   },
-  participants: {
+  participantAvatars: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  miniAvatar: {
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  moreAvatar: {
+    backgroundColor: COLORS.BORDER,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  moreAvatarText: {
+    fontSize: 10,
+    color: COLORS.TEXT_SECONDARY,
+    fontWeight: '600',
   },
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 16,
+    bottom: 40,
     backgroundColor: COLORS.PRIMARY,
+    borderRadius: 9999,
   },
   modal: {
     backgroundColor: 'white',
     padding: 20,
     margin: 20,
     borderRadius: 16,
-    maxHeight: '80%',
+    maxHeight: '90%',
   },
-  modalTitle: {
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 20,
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   input: {
     marginBottom: 16,
     backgroundColor: 'white',
   },
   label: {
-    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: '600',
     color: COLORS.TEXT_SECONDARY,
-    fontSize: 12,
+    marginBottom: 8,
   },
-  modalActions: {
+  categorySelect: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 8,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  selectChip: {
+    backgroundColor: COLORS.BACKGROUND,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER,
   },
   warningBox: {
-    padding: 8,
-    backgroundColor: '#FFEBEE',
+    padding: 12,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 8,
     marginBottom: 16,
-    borderRadius: 4,
   },
   warningText: {
-    color: '#D32F2F',
-    fontSize: 12,
-  },
-  badgeUrgent: {
-    backgroundColor: '#FF5252',
-    marginLeft: 8,
-    height: 24,
-  },
-  badgeNew: {
-    backgroundColor: '#4CAF50',
     marginLeft: 8,
     height: 24,
   },

@@ -42,6 +42,15 @@ interface RegistrationState {
     name: string;
   }>;
 
+  // 学習プロフィール
+  studyProfile: StudyProfile;
+
+  // 季節の質問
+  seasonalQuestion: {
+    question: string;
+    answer: string;
+  };
+
   // Actions
   setUserId: (userId: string) => void;
   setNickname: (nickname: string) => void;
@@ -57,8 +66,48 @@ interface RegistrationState {
   setDetailedTags: (detailedTags: Array<{ category: string; name: string }>) => void;
   addTag: (category: string, name: string) => void;
   removeTag: (name: string) => void;
+  setStudyProfile: (profile: StudyProfile) => void;
+  updateStudyProfile: <K extends keyof StudyProfile>(field: K, value: StudyProfile[K]) => void;
+  setSeasonalQuestion: (question: string, answer: string) => void;
   reset: () => void;
 }
+
+export interface StudyProfile {
+  mockExamName: string;
+  mockExamOther?: string; // その他選択時の自由記述
+  deviationScores: Record<string, string>; // 科目ごとの偏差値 (科目名: 偏差値)
+  rank: 'I' | 'II' | 'III' | 'IV' | 'V' | ''; // 判定ランク (I~V)
+  subjects: {
+    strong: string[];
+    weak: string[];
+  };
+  targetUniversity: string;
+  targetFaculty: string;
+  isTargetUndecided: boolean; // 志望校未定フラグ
+  examType: 'general' | 'comprehensive' | 'recommendation';
+  studyTime: 'morning' | 'night' | 'irregular';
+  studyPlace: string[]; // 複数選択に変更
+  averageStudyTime: string; // 数値入力 (分単位または時間単位の文字列)
+  cramSchool: string;
+  cramSchoolOther?: string; // その他選択時の自由記述
+  isCramSchoolNotAttending: boolean; // 塾に通っていないフラグ
+}
+
+const initialStudyProfile: StudyProfile = {
+  mockExamName: '',
+  deviationScores: {},
+  rank: '',
+  subjects: { strong: [], weak: [] },
+  targetUniversity: '',
+  targetFaculty: '',
+  isTargetUndecided: false,
+  examType: 'general',
+  studyTime: 'irregular',
+  studyPlace: [],
+  averageStudyTime: '',
+  cramSchool: '',
+  isCramSchoolNotAttending: false,
+};
 
 export const useRegistrationStore = create<RegistrationState>((set) => ({
   // 初期値
@@ -86,9 +135,15 @@ export const useRegistrationStore = create<RegistrationState>((set) => ({
   },
   
   detailedTags: [],
+  tags: [],
+  studyProfile: initialStudyProfile,
+  seasonalQuestion: {
+    question: '',
+    answer: '',
+  },
 
   // アクション
-  setUserId: (userId) => set({ userId }),
+  setUserId: (id) => set({ userId: id }),
   setNickname: (nickname) => set({ nickname }),
   setProfileImageUrl: (profileImageUrl) => set({ profileImageUrl }),
   setSchool: (schoolName) => set({ schoolName }),
@@ -106,6 +161,13 @@ export const useRegistrationStore = create<RegistrationState>((set) => ({
   removeTag: (name) => set((state) => ({
     detailedTags: state.detailedTags.filter((tag) => tag.name !== name),
   })),
+  setStudyProfile: (profile) => set({ studyProfile: profile }),
+  updateStudyProfile: (field, value) => set((state) => ({
+    studyProfile: { ...state.studyProfile, [field]: value }
+  })),
+  setSeasonalQuestion: (question, answer) => set({
+    seasonalQuestion: { question, answer }
+  }),
   reset: () => set({
     userId: '',
     nickname: '',
@@ -117,6 +179,8 @@ export const useRegistrationStore = create<RegistrationState>((set) => ({
     careerPath: '',
     themeColor: '#00BCD4',
     socialLinks: [],
+    followerCount: 0,
+    followingCount: 0,
     communicationType: {
       approachability: 3,
       initiative: 3,
@@ -127,5 +191,7 @@ export const useRegistrationStore = create<RegistrationState>((set) => ({
       onlineActivity: 3,
     },
     detailedTags: [],
+    studyProfile: initialStudyProfile,
   }),
 }));
+

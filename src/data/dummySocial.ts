@@ -1,4 +1,5 @@
-import { DUMMY_USERS, User } from './dummyUsers';
+import { DUMMY_USERS } from './dummyUsers';
+import { User } from '../types/user';
 
 // フォロー関係のダミーデータ
 export interface Follow {

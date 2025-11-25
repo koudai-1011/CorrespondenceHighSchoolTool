@@ -1,55 +1,64 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { Text, IconButton } from 'react-native-paper';
+import { Text } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSettingsStore } from '../stores/settingsStore';
 import { COLORS } from '../constants/AppConfig';
 
 export default function BottomNavigation() {
   const navigation = useNavigation();
-  // ストアから現在のルート名を取得
   const { footerItems, currentRouteName } = useSettingsStore();
 
   const handleNavigate = (screen: string) => {
-    navigation.navigate(screen as never);
+    console.log('[BottomNav] Tab clicked:', screen);
+    console.log('[BottomNav] Current route:', currentRouteName);
+    try {
+      navigation.navigate(screen as never);
+      console.log('[BottomNav] Navigate called successfully');
+    } catch (error) {
+      console.error('[BottomNav] Navigate error:', error);
+    }
   };
 
-  // footerItemsが存在しない場合は何も表示しない
   if (!footerItems || footerItems.length === 0) {
+    console.warn('[BottomNav] No footer items');
     return null;
   }
 
   return (
     <View style={styles.container}>
-      {footerItems.map((item, index) => {
+      {footerItems.map((item) => {
         const isActive = currentRouteName === item.screen;
-        const isCenterItem = index === 2; // 中央のアイテム
-
+        
         return (
           <TouchableOpacity
             key={item.id}
-            style={[styles.item, isCenterItem && styles.centerItem]}
-            onPress={() => handleNavigate(item.screen)}
+            style={styles.item}
+            onPress={() => {
+              console.log('[BottomNav] TouchableOpacity pressed:', item.screen);
+              handleNavigate(item.screen);
+            }}
+            activeOpacity={0.7}
           >
-            <View style={[styles.iconContainer, isCenterItem && styles.centerIconContainer]}>
-              <IconButton
-                icon={item.icon}
-                size={isCenterItem ? 28 : 24}
-                iconColor={isActive ? (isCenterItem ? '#FFFFFF' : COLORS.PRIMARY) : '#757575'}
-                style={{ margin: 0 }}
+            <View style={styles.iconContainer}>
+              <MaterialCommunityIcons
+                name={item.icon as any}
+                size={24}
+                color={isActive ? COLORS.PRIMARY : COLORS.TEXT_TERTIARY}
               />
+              <Text 
+                variant="labelSmall" 
+                style={{ 
+                  color: isActive ? COLORS.PRIMARY : COLORS.TEXT_TERTIARY,
+                  fontSize: 10,
+                  marginTop: 2,
+                  fontWeight: isActive ? 'bold' : 'normal'
+                }}
+              >
+                {item.label}
+              </Text>
             </View>
-            <Text
-              variant="bodySmall"
-              style={[
-                styles.label,
-                isActive && styles.activeLabel,
-                isCenterItem && styles.centerLabel,
-              ]}
-            >
-              {item.label}
-            </Text>
-            {isActive && !isCenterItem && <View style={styles.activeIndicator} />}
           </TouchableOpacity>
         );
       })}
@@ -60,65 +69,30 @@ export default function BottomNavigation() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    height: 60,
-    backgroundColor: '#FFFFFF',
+    height: 56, // 少し低く
+    backgroundColor: COLORS.SURFACE, // 白背景
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 8,
+    borderTopColor: COLORS.BORDER, // 極薄いボーダー
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     zIndex: 1000,
+    paddingBottom: 0, // iPhone X等のSafeArea対応は親側で制御するか、ここでpaddingBottomを入れる
+    justifyContent: 'space-around',
+    alignItems: 'center',
   },
   item: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 8,
-    position: 'relative',
-  },
-  centerItem: {
-    marginTop: -8, // 中央のアイテムを少し持ち上げる
+    height: '100%',
   },
   iconContainer: {
-    marginBottom: 2,
-  },
-  centerIconContainer: {
-    backgroundColor: COLORS.PRIMARY,
-    borderRadius: 28,
-    width: 56,
-    height: 56,
-    justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    justifyContent: 'center',
   },
-  label: {
-    fontSize: 11,
-    color: '#757575',
-    marginTop: 2,
-  },
-  activeLabel: {
-    color: COLORS.PRIMARY,
-    fontWeight: '600',
-  },
-  centerLabel: {
-    fontSize: 10,
-  },
-  activeIndicator: {
-    position: 'absolute',
-    top: 0,
-    width: 40,
-    height: 3,
-    backgroundColor: COLORS.PRIMARY,
-    borderRadius: 2,
+  icon: {
+    margin: 0,
   },
 });

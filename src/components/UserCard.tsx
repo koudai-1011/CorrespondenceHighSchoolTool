@@ -1,19 +1,20 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Card, Text, Chip, Avatar } from 'react-native-paper';
-import { User } from '../data/dummyUsers';
+import { User } from '../types/user';
 import { useNavigation } from '@react-navigation/native';
 
 interface UserCardProps {
   user: User;
   matchCount?: number;
+  showStudyProfile?: boolean;
 }
 
-export default function UserCard({ user, matchCount }: UserCardProps) {
-  const navigation = useNavigation();
+export default function UserCard({ user, matchCount, showStudyProfile }: UserCardProps) {
+  const navigation = useNavigation<any>();
 
   const handlePress = () => {
-    navigation.navigate('UserDetail' as never, { user, matchCount } as never);
+    navigation.navigate('UserDetail' as any, { user, matchCount } as any);
   };
 
   return (
@@ -53,6 +54,19 @@ export default function UserCard({ user, matchCount }: UserCardProps) {
               <Text style={styles.moreText}>+{user.detailedTags.length - 5}個</Text>
             )}
           </View>
+
+          {showStudyProfile && user.studyProfile && (
+            <View style={styles.studyProfile}>
+              <Text variant="bodySmall" style={{ fontWeight: 'bold', marginBottom: 4, color: '#666' }}>学習プロフィール</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                <Chip icon="school" compact style={styles.studyChip}>{user.studyProfile.targetUniversity}</Chip>
+                <Chip icon="pencil" compact style={styles.studyChip}>{user.studyProfile.mockExamName}</Chip>
+                {user.studyProfile.subjects.map(sub => (
+                  <Chip key={sub} compact style={styles.studyChip}>{sub}</Chip>
+                ))}
+              </View>
+            </View>
+          )}
 
           <View style={styles.footer}>
             <Text variant="bodySmall" style={styles.footerText}>
@@ -118,5 +132,15 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: '#666',
+  },
+  studyProfile: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  studyChip: {
+    marginRight: 8,
+    height: 24,
   },
 });

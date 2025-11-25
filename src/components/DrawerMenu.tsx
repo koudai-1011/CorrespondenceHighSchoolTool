@@ -1,18 +1,46 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Avatar, Drawer, Divider, IconButton } from 'react-native-paper';
 import { COLORS } from '../constants/AppConfig';
-import { useSettingsStore } from '../stores/settingsStore';
+import { AVAILABLE_FOOTER_ITEMS, useSettingsStore } from '../stores/settingsStore';
 import { useRegistrationStore } from '../stores/registrationStore';
+import { useNavigation } from '@react-navigation/native';
 
-export default function DrawerMenu({ navigation, onClose }: { navigation: any, onClose: () => void }) {
-  const { footerItems } = useSettingsStore();
+export default function DrawerMenu({ onClose }: { onClose: () => void }) {
+  const navigation = useNavigation();
   const { nickname, userId, profileImageUrl, themeColor } = useRegistrationStore();
+  const { examParticipation } = useSettingsStore();
 
   const handleNavigate = (screen: string) => {
-    navigation.navigate(screen);
+    navigation.navigate(screen as never);
     onClose();
   };
+
+  // メニュー項目を整理
+  const mainItems = [
+    AVAILABLE_FOOTER_ITEMS.Home,
+    AVAILABLE_FOOTER_ITEMS.Timeline,
+    AVAILABLE_FOOTER_ITEMS.Community,
+    AVAILABLE_FOOTER_ITEMS.Board,
+  ];
+
+  const featureItems = [
+    AVAILABLE_FOOTER_ITEMS.Talk,
+    AVAILABLE_FOOTER_ITEMS.UserExplore,
+    ...(examParticipation ? [AVAILABLE_FOOTER_ITEMS.Ranking] : []),
+    AVAILABLE_FOOTER_ITEMS.Notification,
+  ];
+
+  const settingsItems = [
+    AVAILABLE_FOOTER_ITEMS.Settings,
+    { id: 'profile-edit', label: 'プロフィール編集', icon: 'account-edit', screen: 'ProfileEdit' },
+  ];
+
+  // Conditionally add exam item
+  const otherItems = [
+    { id: 'admin', label: '管理画面', icon: 'shield-account', screen: 'Admin' },
+    ...(examParticipation ? [{ id: 'exam', label: '試験', icon: 'pencil', screen: 'ExamScreen' }] : []), // Conditionally added exam item
+  ];
 
   return (
     <View style={styles.container}>
@@ -35,8 +63,8 @@ export default function DrawerMenu({ navigation, onClose }: { navigation: any, o
       <Divider />
 
       <ScrollView style={styles.menuItems}>
-        <Drawer.Section title="メニュー">
-          {footerItems.map((item) => (
+        <Drawer.Section title="メイン">
+          {mainItems.map((item) => (
             <Drawer.Item
               key={item.id}
               label={item.label}
@@ -47,25 +75,42 @@ export default function DrawerMenu({ navigation, onClose }: { navigation: any, o
           ))}
         </Drawer.Section>
 
-        <Divider style={styles.divider} />
+        <Drawer.Section title="機能">
+          {featureItems.map((item) => (
+            <Drawer.Item
+              key={item.id}
+              label={item.label}
+              icon={item.icon}
+              onPress={() => handleNavigate(item.screen)}
+              style={styles.drawerItem}
+            />
+          ))}
+        </Drawer.Section>
+
+        <Drawer.Section title="設定">
+          {settingsItems.map((item) => (
+            <Drawer.Item
+              key={item.id}
+              label={item.label}
+              icon={item.icon}
+              onPress={() => handleNavigate(item.screen)}
+              style={styles.drawerItem}
+            />
+          ))}
+        </Drawer.Section>
 
         <Drawer.Section title="その他">
-          <Drawer.Item
-            label="機能設定"
-            icon="cog"
-            onPress={() => handleNavigate('FunctionSettings')}
-          />
-          <Drawer.Item
-            label="ヘルプ・お問い合わせ"
-            icon="help-circle"
-            onPress={() => {}}
-          />
+          {otherItems.map((item) => (
+            <Drawer.Item
+              key={item.id}
+              label={item.label}
+              icon={item.icon}
+              onPress={() => handleNavigate(item.screen)}
+              style={styles.drawerItem}
+            />
+          ))}
         </Drawer.Section>
       </ScrollView>
-
-      <View style={styles.footer}>
-        <Text variant="bodySmall" style={styles.version}>Version 1.0.0</Text>
-      </View>
     </View>
   );
 }
@@ -74,13 +119,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    paddingTop: 50, // ステータスバー分
   },
   header: {
-    padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: COLORS.PRIMARY_LIGHT,
   },
   profileInfo: {
     flexDirection: 'row',
@@ -91,6 +136,7 @@ const styles = StyleSheet.create({
   },
   nickname: {
     fontWeight: 'bold',
+    color: COLORS.TEXT_PRIMARY,
   },
   userId: {
     color: COLORS.TEXT_SECONDARY,
@@ -99,16 +145,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   drawerItem: {
-    marginBottom: 4,
-  },
-  divider: {
-    marginVertical: 8,
-  },
-  footer: {
-    padding: 16,
-    alignItems: 'center',
-  },
-  version: {
-    color: COLORS.TEXT_TERTIARY,
+    marginVertical: 0,
   },
 });

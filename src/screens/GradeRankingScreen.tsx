@@ -57,6 +57,10 @@ export default function GradeRankingScreen({ navigation }: { navigation: any }) 
                 >
                   {item.gradeClass}クラス
                 </Chip>
+                {/* 志望校情報の仮表示（データ構造がまだダミーなので固定値またはランダムで表示） */}
+                <Text variant="bodySmall" style={{ color: COLORS.TEXT_TERTIARY, marginTop: 2 }}>
+                  志望: {['東京大学', '早稲田大学', '慶應義塾大学'][index % 3]}
+                </Text>
               </View>
             </View>
             <View style={styles.rankRight}>
@@ -80,9 +84,9 @@ export default function GradeRankingScreen({ navigation }: { navigation: any }) 
     <div style={{ height: '100vh', overflow: 'auto', backgroundColor: COLORS.BACKGROUND }}>
       <div style={{ padding: 16 }}>
         <View style={styles.header}>
-          <Text variant="headlineMedium" style={styles.title}>成績ランキング</Text>
+          <Text variant="headlineMedium" style={styles.title}>受験</Text>
           <Text variant="bodyMedium" style={styles.subtitle}>
-            みんなで高め合おう！
+            志望校合格を目指して、みんなで励まし合おう！
           </Text>
         </View>
 
@@ -353,7 +357,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 80,
+    bottom: 40,
     backgroundColor: COLORS.PRIMARY,
   },
 });

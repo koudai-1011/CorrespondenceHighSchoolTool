@@ -1,431 +1,244 @@
-import React, { useState, useMemo } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { Button, Text, Chip, Menu, Searchbar, Portal, Modal, SegmentedButtons } from 'react-native-paper';
-import { useRegistrationStore } from '../stores/registrationStore';
-import { DUMMY_USERS, sortUsers, calculateTagMatches, User } from '../data/dummyUsers';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, Searchbar, Chip, Button, IconButton, TextInput, SegmentedButtons, List } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import { calculateTagMatches } from '../data/dummyUsers';
+import { COLORS, PREFECTURES, CAREER_PATHS, AGES, SPACING } from '../constants/AppConfig';
 import UserCard from '../components/UserCard';
-import { PREFECTURES, CAREER_PATHS, AGES, COLORS } from '../constants/AppConfig';
+import { modernStyles } from '../styles/modernStyles';
 
-type SortType = 'newest' | 'followers' | 'active' | 'match';
-type SearchMode = 'similar' | 'ideal' | 'none';
+import { useUserSearch } from '../hooks/useUserSearch';
 
 export default function UserExploreScreen({ navigation }: { navigation: any }) {
-  const { detailedTags } = useRegistrationStore();
-  
-  const [sortBy, setSortBy] = useState<SortType>('newest');
-  const [searchMode, setSearchMode] = useState<SearchMode>('none');
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // フィルタ（拡張）
-  const [selectedPrefecture, setSelectedPrefecture] = useState<string>('');
-  const [selectedGrade, setSelectedGrade] = useState<string>('');
-  const [selectedAge, setSelectedAge] = useState<string>('');
-  const [selectedCareerPath, setSelectedCareerPath] = useState<string>('');
-  const [showFilterModal, setShowFilterModal] = useState(false);
-
-  // ドロップダウンメニューの状態
-  const [prefectureMenuVisible, setPrefectureMenuVisible] = useState(false);
-  const [gradeMenuVisible, setGradeMenuVisible] = useState(false);
-  const [ageMenuVisible, setAgeMenuVisible] = useState(false);
-  const [careerMenuVisible, setCareerMenuVisible] = useState(false);
-
-  const grades = ['1', '2', '3', '4'];
-
-  // ユーザーリストのフィルタリングとソート
-  const filteredAndSortedUsers = useMemo(() => {
-    let users = [...DUMMY_USERS];
-
-    // フィルタ適用
-    if (selectedPrefecture) {
-      users = users.filter(u => u.prefecture === selectedPrefecture);
-    }
-    if (selectedGrade) {
-      users = users.filter(u => u.grade === selectedGrade);
-    }
-    if (selectedAge) {
-      users = users.filter(u => u.age === selectedAge);
-    }
-    if (selectedCareerPath) {
-      users = users.filter(u => u.careerPath === selectedCareerPath);
-    }
-
-    // 検索適用
-    if (searchMode === 'similar') {
-      // 自分と似ている人検索（タグ一致率順）
-      return sortUsers(users, 'match', detailedTags);
-    } else if (searchMode === 'ideal' && searchQuery) {
-      // 条件検索（ニックネームやタグで検索）
-      users = users.filter(u => 
-        u.nickname.includes(searchQuery) ||
-        u.detailedTags.some(tag => tag.name.includes(searchQuery))
-      );
-    }
-
-    // 通常のソート
-    return sortUsers(users, sortBy, detailedTags);
-  }, [sortBy, searchMode, searchQuery, selectedPrefecture, selectedGrade, selectedAge, selectedCareerPath, detailedTags]);
-
-  const handleResetFilters = () => {
-    setSelectedPrefecture('');
-    setSelectedGrade('');
-    setSelectedAge('');
-    setSelectedCareerPath('');
-    setSearchMode('none');
-    setSearchQuery('');
-  };
-
-  const renderUserCard = ({ item }: { item: User }) => {
-    const matchCount = calculateTagMatches(detailedTags, item.detailedTags);
-    return (
-      <UserCard 
-        user={item} 
-        matchCount={searchMode === 'similar' || sortBy === 'match' ? matchCount : undefined}
-      />
-    );
-  };
+  const {
+    searchQuery,
+    tagSuggestions,
+    showSuggestions,
+    showFilters,
+    setShowFilters,
+    selectedPrefecture,
+    setSelectedPrefecture,
+    selectedGrade,
+    setSelectedGrade,
+    selectedAge,
+    setSelectedAge,
+    selectedCareerPath,
+    setSelectedCareerPath,
+    selectedSchool,
+    setSelectedSchool,
+    selectedMockExam,
+    setSelectedMockExam,
+    selectedTargetUniv,
+    setSelectedTargetUniv,
+    selectedSubject,
+    setSelectedSubject,
+    commFilters,
+    setCommFilters,
+    seasonalAnswer,
+    setSeasonalAnswer,
+    handleSearch,
+    selectTag,
+    handleResetFilters,
+    filteredUsers,
+    detailedTags,
+    examParticipation
+  } = useUserSearch();
 
   return (
-    <div style={{ height: '100vh', overflow: 'auto', backgroundColor: COLORS.BACKGROUND }}>
-      <div style={{ padding: 16 }}>
-        <Text variant="headlineMedium" style={styles.title}>ユーザーを探す</Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          気の合う仲間を見つけよう
-        </Text>
+    <View style={modernStyles.container}>
+      <View style={styles.header}>
+        <Text variant="headlineMedium" style={styles.title}>ユーザー探索</Text>
+        
+        {/* Unified Search Bar */}
+        <Searchbar
+          placeholder="名前・学校・タグで検索"
+          onChangeText={handleSearch}
+          value={searchQuery}
+          style={styles.searchBar}
+          inputStyle={{ minHeight: 0 }}
+        />
 
-        {/* 検索バー */}
-        <View style={styles.searchContainer}>
-          <Button 
-            mode={searchMode === 'similar' ? 'contained' : 'outlined'}
-            onPress={() => setSearchMode(searchMode === 'similar' ? 'none' : 'similar')}
-            style={styles.searchButton}
-            compact
-          >
-            似ている人
-          </Button>
-          <View style={{ flex: 1 }}>
-            <Searchbar
-              placeholder="ニックネームやタグで検索"
-              value={searchQuery}
-              onChangeText={(query) => {
-                setSearchQuery(query);
-                if (query) setSearchMode('ideal');
-                else setSearchMode('none');
-              }}
-              style={styles.searchBar}
-            />
-          </View>
-        </View>
-
-        {/* 並び替えとフィルタ */}
-        <View style={styles.controls}>
-          <SegmentedButtons
-            value={sortBy}
-            onValueChange={(value) => setSortBy(value as SortType)}
-            buttons={[
-              { value: 'newest', label: '新着順' },
-              { value: 'active', label: 'アクティブ' },
-              { value: 'followers', label: '人気順' },
-              { value: 'match', label: '一致率順' },
-            ]}
-            style={styles.sortButtons}
-            density="small"
-          />
-          <Button 
-            mode="outlined" 
-            onPress={() => setShowFilterModal(true)}
-            style={styles.filterButton}
-            icon="filter-variant"
-            compact
-          >
-            フィルタ
-            {(selectedPrefecture || selectedGrade || selectedAge || selectedCareerPath) && ' ●'}
-          </Button>
-        </View>
-
-        {/* アクティブフィルタ表示 */}
-        {(selectedPrefecture || selectedGrade || selectedAge || selectedCareerPath || searchMode !== 'none') && (
-          <View style={styles.activeFilters}>
-            {searchMode === 'similar' && (
-              <Chip onClose={() => setSearchMode('none')} style={styles.filterChip}>
-                自分と似ている人
-              </Chip>
-            )}
-            {selectedPrefecture && (
-              <Chip onClose={() => setSelectedPrefecture('')} style={styles.filterChip}>
-                {selectedPrefecture}
-              </Chip>
-            )}
-            {selectedGrade && (
-              <Chip onClose={() => setSelectedGrade('')} style={styles.filterChip}>
-                {selectedGrade}年生
-              </Chip>
-            )}
-            {selectedAge && (
-              <Chip onClose={() => setSelectedAge('')} style={styles.filterChip}>
-                {selectedAge}歳
-              </Chip>
-            )}
-            {selectedCareerPath && (
-              <Chip onClose={() => setSelectedCareerPath('')} style={styles.filterChip}>
-                {selectedCareerPath}
-              </Chip>
-            )}
-            <Button onPress={handleResetFilters} compact>クリア</Button>
+        {/* Filter Toggle Button */}
+        <Button 
+          mode="outlined" 
+          icon={showFilters ? "chevron-up" : "filter"} 
+          onPress={() => setShowFilters(!showFilters)}
+          style={{ marginTop: 8 }}
+        >
+          {showFilters ? '絞り込みを閉じる' : '詳細絞り込み'}
+        </Button>
+        
+        {/* Tag Suggestions - positioned after button to avoid overlap */}
+        {showSuggestions && tagSuggestions.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 200 }}>
+              {tagSuggestions.map((tag, index) => (
+                <TouchableOpacity key={index} style={styles.suggestionItem} onPress={() => selectTag(tag)}>
+                  <Text>#{tag}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         )}
+      </View>
 
-        {/* ユーザーリスト */}
-        <Text variant="bodyMedium" style={styles.resultCount}>
-          {filteredAndSortedUsers.length}人が見つかりました
-        </Text>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Collapsible Filters */}
+        {showFilters && (
+          <View style={{ padding: 16 }}>
+            <List.AccordionGroup>
+              <List.Accordion title="基本プロフィール" id="basic" left={props => <List.Icon {...props} icon="account" />}>
+                <View style={styles.accordionContent}>
+                  <TextInput label="学校名" value={selectedSchool} onChangeText={setSelectedSchool} mode="outlined" style={styles.input} dense />
+                  <TextInput label="都道府県" value={selectedPrefecture} onChangeText={setSelectedPrefecture} mode="outlined" style={styles.input} dense />
+                  <View style={styles.row}>
+                    <TextInput label="学年" value={selectedGrade} onChangeText={setSelectedGrade} mode="outlined" style={[styles.input, { flex: 1 }]} dense keyboardType="numeric" />
+                    <View style={{ width: 8 }} />
+                    <TextInput label="年齢" value={selectedAge} onChangeText={setSelectedAge} mode="outlined" style={[styles.input, { flex: 1 }]} dense keyboardType="numeric" />
+                  </View>
+                  <TextInput label="進路" value={selectedCareerPath} onChangeText={setSelectedCareerPath} mode="outlined" style={styles.input} dense />
+                </View>
+              </List.Accordion>
 
-        <FlatList
-          data={filteredAndSortedUsers}
-          renderItem={renderUserCard}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
-        />
-      </div>
+              {examParticipation && (
+                <List.Accordion title="学習プロフィール" id="study" left={props => <List.Icon {...props} icon="school" />}>
+                  <View style={styles.accordionContent}>
+                    <TextInput label="志望大学" value={selectedTargetUniv} onChangeText={setSelectedTargetUniv} mode="outlined" style={styles.input} dense />
+                    <TextInput label="模試名" value={selectedMockExam} onChangeText={setSelectedMockExam} mode="outlined" style={styles.input} dense />
+                    <TextInput label="得意科目" value={selectedSubject} onChangeText={setSelectedSubject} mode="outlined" style={styles.input} dense />
+                  </View>
+                </List.Accordion>
+              )}
 
-      {/* フィルタモーダル */}
-      <Portal>
-        <Modal 
-          visible={showFilterModal} 
-          onDismiss={() => setShowFilterModal(false)}
-          contentContainerStyle={styles.modalContent}
-        >
-          <Text variant="titleLarge" style={styles.modalTitle}>フィルタ</Text>
+              <List.Accordion title="コミュニケーションスタイル" id="comm" left={props => <List.Icon {...props} icon="chat" />}>
+                <View style={styles.accordionContent}>
+                  <Text style={styles.label}>話しやすさ (以上)</Text>
+                  <SegmentedButtons
+                    value={String(commFilters.approachability)}
+                    onValueChange={v => setCommFilters(prev => ({ ...prev, approachability: Number(v) }))}
+                    buttons={[{ value: '0', label: '指定なし' }, { value: '3', label: '3' }, { value: '4', label: '4' }, { value: '5', label: '5' }]}
+                    density="small"
+                    style={styles.commSegment}
+                  />
+                  <Text style={styles.label}>自分から話す頻度 (以上)</Text>
+                  <SegmentedButtons
+                    value={String(commFilters.initiative)}
+                    onValueChange={v => setCommFilters(prev => ({ ...prev, initiative: Number(v) }))}
+                    buttons={[{ value: '0', label: '指定なし' }, { value: '3', label: '3' }, { value: '4', label: '4' }, { value: '5', label: '5' }]}
+                    density="small"
+                    style={styles.commSegment}
+                  />
+                  <Text style={styles.label}>返信速度 (以上)</Text>
+                  <SegmentedButtons
+                    value={String(commFilters.responseSpeed)}
+                    onValueChange={v => setCommFilters(prev => ({ ...prev, responseSpeed: Number(v) }))}
+                    buttons={[{ value: '0', label: '指定なし' }, { value: '3', label: '3' }, { value: '4', label: '4' }, { value: '5', label: '5' }]}
+                    density="small"
+                    style={styles.commSegment}
+                  />
+                  <Text style={styles.label}>会話の深さ (以上)</Text>
+                  <SegmentedButtons
+                    value={String(commFilters.deepVsCasual)}
+                    onValueChange={v => setCommFilters(prev => ({ ...prev, deepVsCasual: Number(v) }))}
+                    buttons={[{ value: '0', label: '指定なし' }, { value: '3', label: '3' }, { value: '4', label: '4' }, { value: '5', label: '5' }]}
+                    density="small"
+                    style={styles.commSegment}
+                  />
+                  <Text style={styles.label}>オンライン頻度 (以上)</Text>
+                  <SegmentedButtons
+                    value={String(commFilters.onlineActivity)}
+                    onValueChange={v => setCommFilters(prev => ({ ...prev, onlineActivity: Number(v) }))}
+                    buttons={[{ value: '0', label: '指定なし' }, { value: '3', label: '3' }, { value: '4', label: '4' }, { value: '5', label: '5' }]}
+                    density="small"
+                    style={styles.commSegment}
+                  />
+                </View>
+              </List.Accordion>
 
-          {/* 都道府県フィルタ */}
-          <View style={styles.filterRow}>
-            <Text variant="titleSmall" style={styles.filterLabel}>都道府県</Text>
-            <Menu
-              visible={prefectureMenuVisible}
-              onDismiss={() => setPrefectureMenuVisible(false)}
-              anchor={
-                <Button 
-                  mode="outlined" 
-                  onPress={() => setPrefectureMenuVisible(true)}
-                  style={styles.dropdownButton}
-                  contentStyle={styles.dropdownContent}
-                >
-                  {selectedPrefecture || 'すべて'}
-                </Button>
-              }
-            >
-              <Menu.Item 
-                onPress={() => { setSelectedPrefecture(''); setPrefectureMenuVisible(false); }} 
-                title="すべて" 
-              />
-              {PREFECTURES.slice(0, 10).map((pref) => (
-                <Menu.Item
-                  key={pref}
-                  onPress={() => { setSelectedPrefecture(pref); setPrefectureMenuVisible(false); }}
-                  title={pref}
-                />
-              ))}
-            </Menu>
-          </View>
+              <List.Accordion title="季節の質問" id="seasonal" left={props => <List.Icon {...props} icon="snowflake" />}>
+                <View style={styles.accordionContent}>
+                  <Text style={{ marginBottom: 8, color: COLORS.TEXT_SECONDARY }}>Q. 冬の楽しみは？</Text>
+                  <TextInput label="回答で検索" value={seasonalAnswer} onChangeText={setSeasonalAnswer} mode="outlined" style={styles.input} dense />
+                </View>
+              </List.Accordion>
+            </List.AccordionGroup>
 
-          {/* 学年フィルタ */}
-          <View style={styles.filterRow}>
-            <Text variant="titleSmall" style={styles.filterLabel}>学年</Text>
-            <Menu
-              visible={gradeMenuVisible}
-              onDismiss={() => setGradeMenuVisible(false)}
-              anchor={
-                <Button 
-                  mode="outlined" 
-                  onPress={() => setGradeMenuVisible(true)}
-                  style={styles.dropdownButton}
-                  contentStyle={styles.dropdownContent}
-                >
-                  {selectedGrade ? `${selectedGrade}年生` : 'すべて'}
-                </Button>
-              }
-            >
-              <Menu.Item 
-                onPress={() => { setSelectedGrade(''); setGradeMenuVisible(false); }} 
-                title="すべて" 
-              />
-              {grades.map((grade) => (
-                <Menu.Item
-                  key={grade}
-                  onPress={() => { setSelectedGrade(grade); setGradeMenuVisible(false); }}
-                  title={`${grade}年生`}
-                />
-              ))}
-            </Menu>
-          </View>
-
-          {/* 年齢フィルタ */}
-          <View style={styles.filterRow}>
-            <Text variant="titleSmall" style={styles.filterLabel}>年齢</Text>
-            <Menu
-              visible={ageMenuVisible}
-              onDismiss={() => setAgeMenuVisible(false)}
-              anchor={
-                <Button 
-                  mode="outlined" 
-                  onPress={() => setAgeMenuVisible(true)}
-                  style={styles.dropdownButton}
-                  contentStyle={styles.dropdownContent}
-                >
-                  {selectedAge ? `${selectedAge}歳` : 'すべて'}
-                </Button>
-              }
-            >
-              <Menu.Item 
-                onPress={() => { setSelectedAge(''); setAgeMenuVisible(false); }} 
-                title="すべて" 
-              />
-              {AGES.map((age) => (
-                <Menu.Item
-                  key={age}
-                  onPress={() => { setSelectedAge(age); setAgeMenuVisible(false); }}
-                  title={`${age}歳`}
-                />
-              ))}
-            </Menu>
-          </View>
-
-          {/* 希望進路フィルタ */}
-          <View style={styles.filterRow}>
-            <Text variant="titleSmall" style={styles.filterLabel}>希望進路</Text>
-            <Menu
-              visible={careerMenuVisible}
-              onDismiss={() => setCareerMenuVisible(false)}
-              anchor={
-                <Button 
-                  mode="outlined" 
-                  onPress={() => setCareerMenuVisible(true)}
-                  style={styles.dropdownButton}
-                  contentStyle={styles.dropdownContent}
-                >
-                  {selectedCareerPath || 'すべて'}
-                </Button>
-              }
-            >
-              <Menu.Item 
-                onPress={() => { setSelectedCareerPath(''); setCareerMenuVisible(false); }} 
-                title="すべて" 
-              />
-              {CAREER_PATHS.map((path) => (
-                <Menu.Item
-                  key={path}
-                  onPress={() => { setSelectedCareerPath(path); setCareerMenuVisible(false); }}
-                  title={path}
-                />
-              ))}
-            </Menu>
-          </View>
-
-          <View style={styles.modalActions}>
-            <Button onPress={handleResetFilters}>リセット</Button>
-            <Button mode="contained" onPress={() => setShowFilterModal(false)}>
-              適用
+            <Button mode="outlined" onPress={handleResetFilters} style={{ margin: 16 }}>
+              条件をリセット
             </Button>
           </View>
-        </Modal>
-      </Portal>
-    </div>
+        )}
+        
+        {/* Results */}
+        <Text style={styles.resultCount}>{filteredUsers.length}人のユーザーが見つかりました</Text>
+        
+        {filteredUsers.map(user => (
+          <UserCard 
+            key={user.id} 
+            user={user} 
+            matchCount={calculateTagMatches(detailedTags, user.detailedTags)}
+            showStudyProfile={examParticipation}
+          />
+        ))}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  header: {
+    padding: 16,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.BORDER,
+  },
   title: {
     fontWeight: '700',
     color: COLORS.TEXT_PRIMARY,
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: COLORS.TEXT_SECONDARY,
-    marginBottom: 16,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  searchButton: {
-    alignSelf: 'center',
-  },
-  searchBar: {
-    backgroundColor: COLORS.SURFACE,
-    elevation: 0,
-    borderRadius: 12,
-  },
-  controls: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  sortButtons: {
-    flex: 1,
-  },
-  filterButton: {
-    alignSelf: 'center',
-  },
-  activeFilters: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  filterChip: {
-    backgroundColor: COLORS.PRIMARY_LIGHT,
-  },
-  resultCount: {
-    color: COLORS.TEXT_SECONDARY,
     marginBottom: 12,
   },
-  modalContent: {
+  searchBar: {
     backgroundColor: 'white',
-    padding: 20,
-    margin: 20,
-    borderRadius: 16,
-    maxHeight: '80%',
+    elevation: 2,
+    borderRadius: 8,
   },
-  modalTitle: {
-    marginBottom: 20,
-    textAlign: 'center',
-    fontWeight: '700',
-    color: COLORS.TEXT_PRIMARY,
+  suggestionsContainer: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    elevation: 4,
+    zIndex: 1000,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER,
+    maxHeight: 200,
+    marginTop: 4,
   },
-  filterRow: {
-    marginBottom: 16,
-  },
-  filterLabel: {
-    marginBottom: 8,
-    color: COLORS.TEXT_SECONDARY,
-    fontWeight: '600',
-  },
-  dropdownButton: {
-    width: '100%',
-    justifyContent: 'flex-start',
-  },
-  dropdownContent: {
-    justifyContent: 'flex-start',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-  },
-  modalLabel: {
-    marginBottom: 8,
-    color: COLORS.TEXT_SECONDARY,
-    fontWeight: '600',
-  },
-  modalItem: {
+  suggestionItem: {
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#F0F0F0',
   },
-  selectedItem: {
-    backgroundColor: COLORS.PRIMARY_LIGHT,
-    fontWeight: '600',
+  accordionContent: {
+    padding: 16,
+    backgroundColor: '#FAFAFA',
+  },
+  input: {
+    marginBottom: 12,
+    backgroundColor: 'white',
+  },
+  row: {
+    flexDirection: 'row',
+  },
+  label: {
+    fontSize: 12,
+    color: COLORS.TEXT_SECONDARY,
+    marginBottom: 4,
+    marginTop: 8,
+  },
+  commSegment: {
+    marginBottom: 8,
+  },
+  resultCount: {
+    textAlign: 'center',
+    color: COLORS.TEXT_SECONDARY,
+    marginVertical: 16,
   },
 });

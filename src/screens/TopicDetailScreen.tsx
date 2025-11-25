@@ -89,8 +89,9 @@ export default function TopicDetailScreen({ route }: { route: any }) {
     }
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (dateString: string) => {
     const now = new Date();
+    const date = new Date(dateString);
     const diff = Math.floor((now.getTime() - date.getTime()) / 1000 / 60);
     
     if (diff < 60) return `${diff}分前`;

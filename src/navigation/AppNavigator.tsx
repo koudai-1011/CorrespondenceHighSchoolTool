@@ -1,5 +1,5 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, Animated, Easing, Dimensions } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Provider as PaperProvider, MD3LightTheme, IconButton } from 'react-native-paper';
@@ -7,6 +7,7 @@ import LoginScreen from '../screens/LoginScreen';
 import ProfileCreationScreen from '../screens/ProfileCreationScreen';
 import CommunicationDiagnosisScreen from '../screens/CommunicationDiagnosisScreen';
 import DetailedTagInputScreen from '../screens/DetailedTagInputScreen';
+import StudyProfileInputScreen from '../screens/StudyProfileInputScreen'; // 追加
 import UserExploreScreen from '../screens/UserExploreScreen';
 import TimelineScreen from '../screens/TimelineScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -19,8 +20,8 @@ import CommunityScreen from '../screens/CommunityScreen';
 import TopicDetailScreen from '../screens/TopicDetailScreen';
 import NotificationScreen from '../screens/NotificationScreen';
 import FollowListScreen from '../screens/FollowListScreen';
-import ChatListScreen from '../screens/ChatListScreen';
 import ChatScreen from '../screens/ChatScreen';
+import TalkScreen from '../screens/TalkScreen';
 import GroupListScreen from '../screens/GroupListScreen';
 import GroupCreateScreen from '../screens/GroupCreateScreen';
 import GroupSearchScreen from '../screens/GroupSearchScreen';
@@ -55,7 +56,43 @@ import { useSettingsStore } from '../stores/settingsStore';
 export default function AppNavigator() {
   const { setCurrentRouteName, footerItems } = useSettingsStore();
   const hasFooter = footerItems && footerItems.length > 0;
-  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false); // Drawer state
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const slideAnim = useRef(new Animated.Value(Dimensions.get('window').width * 0.8)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isDrawerOpen) {
+      setDrawerVisible(true);
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.cubic),
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: Dimensions.get('window').width * 0.8,
+          duration: 250,
+          useNativeDriver: true,
+          easing: Easing.in(Easing.cubic),
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setDrawerVisible(false));
+    }
+  }, [isDrawerOpen]);
 
   return (
     <PaperProvider theme={theme}>
@@ -79,9 +116,9 @@ export default function AppNavigator() {
                 headerTitleStyle: {
                   fontWeight: '600',
                 },
-                headerTitleAlign: 'center', // タイトルを中央に配置
+                headerTitleAlign: 'center',
                 headerShadowVisible: true,
-                headerLeft: () => ( // 戻るボタンを左上に追加
+                headerLeft: () => (
                   <IconButton
                     icon="arrow-left"
                     iconColor="#fff"
@@ -94,24 +131,25 @@ export default function AppNavigator() {
                   />
                 ),
                 headerRight: () => (
-                  <IconButton
-                    icon="menu"
-                    iconColor="#fff"
-                    size={24}
-                    onPress={() => setIsDrawerOpen(true)} // Open drawer
-                  />
+                  <TouchableOpacity
+                    onPress={() => setIsDrawerOpen(true)}
+                    style={{ marginRight: 16 }}
+                  >
+                    <Text style={{ fontSize: 24, color: 'white' }}>☰</Text>
+                  </TouchableOpacity>
                 ),
               })}
             >
               <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'ログイン' }} />
               <Stack.Screen name="ProfileCreation" component={ProfileCreationScreen} options={{ title: 'プロフィール作成' }} />
+              <Stack.Screen name="StudyProfileInput" component={StudyProfileInputScreen} options={{ title: '学習プロフィール' }} />
               <Stack.Screen name="CommunicationDiagnosis" component={CommunicationDiagnosisScreen} options={{ title: 'コミュニケーション診断' }} />
               <Stack.Screen name="DetailedTagInput" component={DetailedTagInputScreen} options={{ title: '詳細タグ入力' }} />
               <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'ホーム' }} />
               <Stack.Screen name="UserExplore" component={UserExploreScreen} options={{ title: 'ユーザー探索' }} />
               <Stack.Screen name="Timeline" component={TimelineScreen} options={{ title: 'タイムライン' }} />
               <Stack.Screen name="Board" component={BoardScreen} options={{ title: '掲示板' }} />
-              <Stack.Screen name="UserDetail" component={UserDetailScreen} options={{ title: 'プロフィール' }} />
+              <Stack.Screen name="UserDetail" component={UserDetailScreen as any} options={{ title: 'プロフィール' }} />
               <Stack.Screen name="Admin" component={AdminScreen} options={{ title: '管理画面' }} />
               <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} options={{ title: 'プロフィール編集' }} />
               <Stack.Screen name="RecruitmentDetail" component={RecruitmentDetailScreen} options={{ title: '募集詳細' }} />
@@ -119,7 +157,7 @@ export default function AppNavigator() {
               <Stack.Screen name="TopicDetail" component={TopicDetailScreen} options={{ title: 'トピック' }} />
               <Stack.Screen name="Notification" component={NotificationScreen} options={{ title: '通知' }} />
               <Stack.Screen name="FollowList" component={FollowListScreen} options={{ title: 'フォロー/フォロワー' }} />
-              <Stack.Screen name="ChatList" component={ChatListScreen} options={{ title: 'チャット' }} />
+              <Stack.Screen name="Talk" component={TalkScreen} options={{ title: 'トーク' }} />
               <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'チャット' }} />
               <Stack.Screen name="GroupList" component={GroupListScreen} options={{ title: 'グループ' }} />
               <Stack.Screen name="GroupCreate" component={GroupCreateScreen} options={{ title: 'グループ作成' }} />
@@ -127,25 +165,44 @@ export default function AppNavigator() {
               <Stack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: 'グループ詳細' }} />
               <Stack.Screen name="GradeRanking" component={GradeRankingScreen} options={{ title: '成績ランキング' }} />
               <Stack.Screen name="GradeInput" component={GradeInputScreen} options={{ title: '成績登録' }} />
-              <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: '設定' }} />
               <Stack.Screen name="Menu" component={MenuScreen} options={{ title: 'メニュー' }} />
-              <Stack.Screen name="FunctionSettings" component={FunctionSettingsScreen} options={{ title: '機能設定' }} />
+              <Stack.Screen name="Settings" component={FunctionSettingsScreen} options={{ title: '設定' }} />
             </Stack.Navigator>
           </View>
           
-          {/* フッターナビゲーション */}
           <BottomNavigation />
-          
-          {/* 開発者メニュー（本番環境では削除） */}
           <DevMenu />
 
-          {/* ドロワーメニューオーバーレイ */}
-          {isDrawerOpen && (
-            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 2000, flexDirection: 'row' }}>
-              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }} onTouchEnd={() => setIsDrawerOpen(false)} />
-              <View style={{ width: '80%', backgroundColor: 'white' }}>
-                <DrawerMenu navigation={useNavigation()} onClose={() => setIsDrawerOpen(false)} />
-              </View>
+          {/* Animated Drawer Menu */}
+          {drawerVisible && (
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 2000 }}>
+              {/* Backdrop */}
+              <Animated.View 
+                style={{ 
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                  backgroundColor: 'black', 
+                  opacity: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] }) 
+                }}
+                onTouchEnd={() => setIsDrawerOpen(false)}
+              />
+              {/* Drawer Content */}
+              <Animated.View 
+                style={{ 
+                  position: 'absolute',
+                  right: 0,
+                  width: '80%', 
+                  height: '100%', 
+                  backgroundColor: 'white', 
+                  transform: [{ translateX: slideAnim }],
+                  shadowColor: "#000",
+                  shadowOffset: { width: -2, height: 0 }, // Shadow on left side
+                  shadowOpacity: 0.25,
+                  shadowRadius: 3.84,
+                  elevation: 5,
+                }}
+              >
+                <DrawerMenu onClose={() => setIsDrawerOpen(false)} />
+              </Animated.View>
             </View>
           )}
         </View>

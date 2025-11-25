@@ -10,8 +10,9 @@ export interface Topic {
   content: string;
   commentCount: number;
   viewCount: number;
-  lastCommentAt: Date;
-  createdAt: Date;
+  lastCommentAt: string; // ISO string
+  createdAt: string; // ISO string
+  comments: Comment[]; // Add comments array for easier access
 }
 
 export interface Comment {
@@ -19,7 +20,7 @@ export interface Comment {
   topicId: string;
   authorId: string;
   content: string;
-  createdAt: Date;
+  createdAt: string; // ISO string
 }
 
 interface CommunityState {
@@ -48,8 +49,9 @@ const generateDummyTopics = (): Topic[] => {
       content: '最近ゴールド帯で詰まってます...みんなはどんな構成で回してますか？',
       commentCount: 8,
       viewCount: 45,
-      lastCommentAt: new Date(now.getTime() - 1000 * 60 * 30), // 30分前
-      createdAt: new Date(now.getTime() - 1000 * 60 * 60 * 5), // 5時間前
+      lastCommentAt: new Date(now.getTime() - 1000 * 60 * 30).toISOString(),
+      createdAt: new Date(now.getTime() - 1000 * 60 * 60 * 5).toISOString(),
+      comments: [],
     },
     {
       id: 'topic2',
@@ -59,8 +61,9 @@ const generateDummyTopics = (): Topic[] => {
       content: '教科書の例題は解けるんですが、応用問題になると手が出ません。おすすめの参考書ありますか？',
       commentCount: 12,
       viewCount: 78,
-      lastCommentAt: new Date(now.getTime() - 1000 * 60 * 15), // 15分前
-      createdAt: new Date(now.getTime() - 1000 * 60 * 60 * 24), // 1日前
+      lastCommentAt: new Date(now.getTime() - 1000 * 60 * 15).toISOString(),
+      createdAt: new Date(now.getTime() - 1000 * 60 * 60 * 24).toISOString(),
+      comments: [],
     },
     {
       id: 'topic3',
@@ -70,8 +73,9 @@ const generateDummyTopics = (): Topic[] => {
       content: 'IT系の大学に進みたいんですが、私立と国公立どっちがいいですかね？',
       commentCount: 15,
       viewCount: 92,
-      lastCommentAt: new Date(now.getTime() - 1000 * 60 * 60 * 2), // 2時間前
-      createdAt: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 2), // 2日前
+      lastCommentAt: new Date(now.getTime() - 1000 * 60 * 60 * 2).toISOString(),
+      createdAt: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+      comments: [],
     },
     {
       id: 'topic4',
@@ -81,8 +85,9 @@ const generateDummyTopics = (): Topic[] => {
       content: '推しの子の新シーズン楽しみすぎる！',
       commentCount: 20,
       viewCount: 120,
-      lastCommentAt: new Date(now.getTime() - 1000 * 60 * 5), // 5分前
-      createdAt: new Date(now.getTime() - 1000 * 60 * 60 * 10), // 10時間前
+      lastCommentAt: new Date(now.getTime() - 1000 * 60 * 5).toISOString(),
+      createdAt: new Date(now.getTime() - 1000 * 60 * 60 * 10).toISOString(),
+      comments: [],
     },
   ];
 };
@@ -95,21 +100,21 @@ const generateDummyComments = (): Comment[] => {
       topicId: 'topic1',
       authorId: 'user1',
       content: 'ブラハ・ライフライン・ジブラルタルの構成がおすすめです！',
-      createdAt: new Date(now.getTime() - 1000 * 60 * 45),
+      createdAt: new Date(now.getTime() - 1000 * 60 * 45).toISOString(),
     },
     {
       id: 'comment2',
       topicId: 'topic1',
       authorId: 'user3',
       content: '自分はオクタン使ってます。機動力大事！',
-      createdAt: new Date(now.getTime() - 1000 * 60 * 30),
+      createdAt: new Date(now.getTime() - 1000 * 60 * 30).toISOString(),
     },
     {
       id: 'comment3',
       topicId: 'topic2',
       authorId: 'user1',
       content: 'チャート式がおすすめです！',
-      createdAt: new Date(now.getTime() - 1000 * 60 * 60 * 12),
+      createdAt: new Date(now.getTime() - 1000 * 60 * 60 * 12).toISOString(),
     },
   ];
 };
@@ -125,8 +130,9 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
         id: Math.random().toString(36).substring(7),
         commentCount: 0,
         viewCount: 0,
-        lastCommentAt: new Date(),
-        createdAt: new Date(),
+        lastCommentAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        comments: [],
       },
       ...state.topics,
     ],
@@ -136,13 +142,13 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
     const newComment: Comment = {
       ...commentData,
       id: Math.random().toString(36).substring(7),
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     };
 
     // トピックのコメント数と最終コメント日時を更新
     const updatedTopics = state.topics.map(topic => 
       topic.id === commentData.topicId
-        ? { ...topic, commentCount: topic.commentCount + 1, lastCommentAt: new Date() }
+        ? { ...topic, commentCount: topic.commentCount + 1, lastCommentAt: new Date().toISOString() }
         : topic
     );
 
@@ -173,14 +179,14 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
     const now = new Date();
     // 24時間以内のコメント数と閲覧数でスコア計算
     return [...topics].sort((a, b) => {
-      const scoreA = (a.commentCount * 2) + a.viewCount + (now.getTime() - a.lastCommentAt.getTime() < 86400000 ? 50 : 0);
-      const scoreB = (b.commentCount * 2) + b.viewCount + (now.getTime() - b.lastCommentAt.getTime() < 86400000 ? 50 : 0);
+      const scoreA = (a.commentCount * 2) + a.viewCount + (now.getTime() - new Date(a.lastCommentAt).getTime() < 86400000 ? 50 : 0);
+      const scoreB = (b.commentCount * 2) + b.viewCount + (now.getTime() - new Date(b.lastCommentAt).getTime() < 86400000 ? 50 : 0);
       return scoreB - scoreA;
     });
   },
 
   getNewestTopics: () => {
     const { topics } = get();
-    return [...topics].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return [...topics].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   },
 }));

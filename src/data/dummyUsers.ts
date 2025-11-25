@@ -1,32 +1,9 @@
 // ダミーユーザーデータ（プロトタイプ用）
 // ダミーユーザーデータ（プロトタイプ用）
-export interface User {
-  id: string;
-  nickname: string;
-  profileImageUrl?: string; // 新規追加
-  schoolName: string;
-  prefecture: string;
-  grade: string;
-  age: string;
-  gender: string; // 新規追加
-  bio?: string;   // 新規追加
-  careerPath: string;
-  themeColor: string;
-  detailedTags: { category: string; name: string }[];
-  socialLinks?: Array<{ platform: string; url: string; username?: string }>; // SNSリンク
-  communicationType: {
-    approachability: number;      // 1-5: 話しかけやすさ
-    initiative: number;            // 1-5: 自分から話しかける頻度
-    responseSpeed: number;         // 1-5: 返信の速さ
-    groupPreference: 'one-on-one' | 'small' | 'large';
-    textVsVoice: 'text' | 'voice' | 'both';
-    deepVsCasual: number;          // 1-5: 深い話 vs 軽い話
-    onlineActivity: number;        // 1-5: オンライン頻度
-  };
-  followerCount: number;
-  lastActive: Date;
-  createdAt: Date;
-}
+import { User } from '../types/user';
+
+export { User }; // Re-export for backward compatibility during refactoring
+
 
 export const DUMMY_USERS: User[] = [
   {
@@ -57,8 +34,22 @@ export const DUMMY_USERS: User[] = [
       onlineActivity: 3,
     },
     followerCount: 12,
-    lastActive: new Date('2025-11-21'),
-    createdAt: new Date('2025-11-01'),
+    lastActive: new Date('2025-11-21').toISOString(),
+    createdAt: new Date('2025-11-01').toISOString(),
+    studyProfile: {
+      mockExamName: '進研模試',
+      targetUniversity: '早稲田大学',
+      subjects: ['英語', '国語', '日本史'],
+    },
+    seasonalQuestion: {
+      question: '冬の楽しみは？',
+      answer: 'こたつでみかん',
+    },
+    titles: [
+      { id: 't1', name: '新人', description: 'アプリに初登録', iconColor: '#4CAF50', obtainedAt: new Date('2025-11-01').toISOString() },
+      { id: 't2', name: 'アクティブ', description: '7日間連続ログイン', iconColor: '#2196F3', obtainedAt: new Date('2025-11-08').toISOString() },
+    ],
+    currentTitleId: 't2',
   },
   {
     id: '2',
@@ -88,8 +79,12 @@ export const DUMMY_USERS: User[] = [
       onlineActivity: 5,
     },
     followerCount: 25,
-    lastActive: new Date('2025-11-22'),
-    createdAt: new Date('2025-10-15'),
+    lastActive: new Date('2025-11-22').toISOString(),
+    createdAt: new Date('2025-10-15').toISOString(),
+    seasonalQuestion: {
+      question: '冬の楽しみは？',
+      answer: 'スノボに行きたい',
+    },
   },
   {
     id: '3',
@@ -119,8 +114,12 @@ export const DUMMY_USERS: User[] = [
       onlineActivity: 2,
     },
     followerCount: 8,
-    lastActive: new Date('2025-11-20'),
-    createdAt: new Date('2025-11-10'),
+    lastActive: new Date('2025-11-20').toISOString(),
+    createdAt: new Date('2025-11-05').toISOString(),
+    seasonalQuestion: {
+      question: '冬の楽しみは？',
+      answer: 'イルミネーション',
+    },
   },
   {
     id: '4',
@@ -150,8 +149,17 @@ export const DUMMY_USERS: User[] = [
       onlineActivity: 4,
     },
     followerCount: 15,
-    lastActive: new Date('2025-11-22'),
-    createdAt: new Date('2025-10-20'),
+    lastActive: new Date('2025-11-19').toISOString(),
+    createdAt: new Date('2025-10-20').toISOString(),
+    studyProfile: {
+      mockExamName: '河合模試',
+      targetUniversity: '明治大学',
+      subjects: ['英語', '数学', '物理'],
+    },
+    seasonalQuestion: {
+      question: '冬の楽しみは？',
+      answer: '鍋パーティー',
+    },
   },
   {
     id: '5',
@@ -181,8 +189,12 @@ export const DUMMY_USERS: User[] = [
       onlineActivity: 4,
     },
     followerCount: 20,
-    lastActive: new Date('2025-11-21'),
-    createdAt: new Date('2025-09-01'),
+    lastActive: new Date('2025-11-21').toISOString(),
+    createdAt: new Date('2025-09-01').toISOString(),
+    seasonalQuestion: {
+      question: '冬の楽しみは？',
+      answer: '温泉旅行',
+    },
   },
 ];
 
@@ -194,16 +206,16 @@ export const calculateTagMatches = (userTags: { name: string }[], targetTags: { 
 };
 
 // ユーザーをソートする関数
-export const sortUsers = (users: User[], sortBy: string, currentUserTags?: { name: string }[]): User[] => {
+export function sortUsers(users: User[], sortKey: string, currentUserTags?: { name: string }[]): User[] {
   const sorted = [...users];
   
-  switch (sortBy) {
-    case 'newest':
-      return sorted.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    case 'followers':
+  switch (sortKey) {
+    case 'latest':
+      return sorted.sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime());
+    case 'follower':
       return sorted.sort((a, b) => b.followerCount - a.followerCount);
-    case 'active':
-      return sorted.sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
+    case 'new':
+      return sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     case 'match':
       if (!currentUserTags) return sorted;
       return sorted.sort((a, b) => {

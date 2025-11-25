@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User } from '../data/dummyUsers';
+import { User } from '../types/user';
 
 export type GroupJoinType = 'open' | 'approval';
 

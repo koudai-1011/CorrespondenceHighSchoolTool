@@ -20,7 +20,7 @@ export default function MenuScreen({ navigation }: { navigation: any }) {
         </View>
 
         <View style={styles.grid}>
-          {AVAILABLE_FOOTER_ITEMS.map((item) => (
+          {Object.values(AVAILABLE_FOOTER_ITEMS).map((item) => (
             <TouchableOpacity
               key={item.id}
               style={styles.menuItem}

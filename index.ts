@@ -1,4 +1,8 @@
 import { registerRootComponent } from 'expo';
+import { enableScreens } from 'react-native-screens';
+
+// Web環境での不具合回避のため無効化
+enableScreens(false);
 
 import App from './App';
 

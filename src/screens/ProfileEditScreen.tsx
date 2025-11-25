@@ -22,9 +22,12 @@ export default function ProfileEditScreen({ navigation, route }: { navigation: a
     communicationType,
     setProfileImageUrl,
     setSocialLinks,
+    studyProfile,
+    seasonalQuestion,
+    setSeasonalQuestion,
   } = useRegistrationStore();
 
-  const { setPendingAdTrigger } = useSettingsStore();
+  const { setPendingAdTrigger, examParticipation } = useSettingsStore();
 
   // モーダル表示状態
   const [showImageModal, setShowImageModal] = useState(false);
@@ -36,6 +39,11 @@ export default function ProfileEditScreen({ navigation, route }: { navigation: a
   const [tempPlatform, setTempPlatform] = useState('');
   const [tempUrl, setTempUrl] = useState('');
   const [tempUsername, setTempUsername] = useState('');
+
+  // 季節の質問編集用のstate
+  const [showSeasonalModal, setShowSeasonalModal] = useState(false);
+  const [tempQuestion, setTempQuestion] = useState(seasonalQuestion?.question || '');
+  const [tempAnswer, setTempAnswer] = useState(seasonalQuestion?.answer || '');
 
   // プロフィール画像の保存
   const handleSaveImage = () => {
@@ -327,6 +335,78 @@ export default function ProfileEditScreen({ navigation, route }: { navigation: a
                   )}
                 </View>
               )}
+
+              <Text variant="bodySmall" style={styles.hint}>
+                タップして編集
+              </Text>
+            </Card.Content>
+          </Card>
+        </TouchableOpacity>
+
+        {/* 学習プロフィール（受験機能ONの場合のみ） */}
+        {examParticipation && (
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('StudyProfileInput', { isEditMode: true })}
+            activeOpacity={0.7}
+          >
+            <Card style={styles.card}>
+              <Card.Content>
+                <View style={styles.sectionHeader}>
+                  <Text variant="titleMedium" style={styles.sectionTitle}>学習プロフィール</Text>
+                  <IconButton icon="arrow-right" size={20} />
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>志望校</Text>
+                  <Text style={styles.infoValue}>
+                    {studyProfile?.targetUniversity ? `${studyProfile.targetUniversity} ${studyProfile.targetFaculty || ''}` : '未設定'}
+                  </Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>模試・偏差値</Text>
+                  <Text style={styles.infoValue}>
+                    {studyProfile?.mockExamName || '未設定'}
+                  </Text>
+                </View>
+
+                <Text variant="bodySmall" style={styles.hint}>
+                  タップして編集
+                </Text>
+              </Card.Content>
+            </Card>
+          </TouchableOpacity>
+        )}
+
+        {/* 季節の質問 */}
+        <TouchableOpacity 
+          onPress={() => {
+            setTempQuestion(seasonalQuestion?.question || '');
+            setTempAnswer(seasonalQuestion?.answer || '');
+            setShowSeasonalModal(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Card style={styles.card}>
+            <Card.Content>
+              <View style={styles.sectionHeader}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>季節の質問</Text>
+                <IconButton icon="pencil" size={20} />
+              </View>
+
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>質問</Text>
+                <Text style={styles.infoValue}>
+                  {seasonalQuestion?.question || '未設定'}
+                </Text>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>回答</Text>
+                <Text style={styles.infoValue}>
+                  {seasonalQuestion?.answer || '未設定'}
+                </Text>
+              </View>
 
               <Text variant="bodySmall" style={styles.hint}>
                 タップして編集

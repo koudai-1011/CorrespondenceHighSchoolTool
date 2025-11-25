@@ -7,13 +7,14 @@ import { COLORS } from '../constants/AppConfig';
 export default function FunctionSettingsScreen({ navigation }: { navigation: any }) {
   const {
     footerItems,
-    rankingParticipation,
+    examParticipation,
     setFooterItems,
-    setRankingParticipation,
+    setExamParticipation,
     resetToDefault,
   } = useSettingsStore();
 
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null);
+  const [showExamConfirmModal, setShowExamConfirmModal] = useState(false);
 
   // 5つのスロットを管理（未選択の場合はnull）
   const slots: (FooterItem | null)[] = [
@@ -25,7 +26,7 @@ export default function FunctionSettingsScreen({ navigation }: { navigation: any
   ];
 
   // 選択可能なアイテム（既に配置されているものを除外）
-  const availableItems = AVAILABLE_FOOTER_ITEMS.filter(
+  const availableItems = Object.values(AVAILABLE_FOOTER_ITEMS).filter(
     item => !footerItems.some(fi => fi.id === item.id)
   );
 
@@ -57,21 +58,29 @@ export default function FunctionSettingsScreen({ navigation }: { navigation: any
           </Text>
         </View>
 
-        {/* ランキング参加設定 */}
+        {/* 受験機能設定 */}
         <View style={styles.section}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>成績ランキング</Text>
+          <Text variant="titleMedium" style={styles.sectionTitle}>受験機能</Text>
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text variant="bodyMedium" style={styles.settingLabel}>ランキングに参加する</Text>
+              <Text variant="bodyMedium" style={styles.settingLabel}>受験機能を利用する</Text>
               <Text variant="bodySmall" style={styles.settingDesc}>
-                {rankingParticipation 
-                  ? '成績が他のユーザーに表示されます' 
-                  : '成績は非公開になります（自分のみ閲覧可能）'}
+                {examParticipation 
+                  ? '学習プロフィールが公開され、受験生同士でつながれます' 
+                  : '受験機能は無効になっています'}
               </Text>
             </View>
             <Switch
-              value={rankingParticipation}
-              onValueChange={setRankingParticipation}
+              value={examParticipation}
+              onValueChange={(value) => {
+                if (value) {
+                  // ONにする場合、確認ダイアログを表示
+                  setShowExamConfirmModal(true);
+                } else {
+                  // OFFにする場合は即座に反映
+                  setExamParticipation(false);
+                }
+              }}
               color={COLORS.PRIMARY}
             />
           </View>
@@ -185,6 +194,44 @@ export default function FunctionSettingsScreen({ navigation }: { navigation: any
         style={styles.fab}
         onPress={() => navigation.goBack()}
       />
+
+      {/* 受験機能有効化の確認モーダル */}
+      <Portal>
+        <Modal
+          visible={showExamConfirmModal}
+          onDismiss={() => setShowExamConfirmModal(false)}
+          contentContainerStyle={styles.modalContent}
+        >
+          <Text variant="titleLarge" style={styles.modalTitle}>受験機能を利用しますか？</Text>
+          <Text variant="bodyMedium" style={styles.modalText}>
+            受験機能を最大限活用するには、学習プロフィールの登録がおすすめです。
+            {'\n'}今すぐプロフィールを登録しますか？
+          </Text>
+          <View style={styles.modalActions}>
+            <Button 
+              mode="outlined" 
+              onPress={() => {
+                setExamParticipation(true);
+                setShowExamConfirmModal(false);
+              }} 
+              style={{ flex: 1 }}
+            >
+              後で
+            </Button>
+            <Button 
+              mode="contained" 
+              onPress={() => {
+                setExamParticipation(true);
+                setShowExamConfirmModal(false);
+                navigation.navigate('StudyProfileInput', { isEditMode: true });
+              }} 
+              style={{ flex: 1 }}
+            >
+              登録する
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
     </div>
   );
 }
@@ -323,5 +370,27 @@ const styles = StyleSheet.create({
     right: 16,
     bottom: 16,
     backgroundColor: COLORS.PRIMARY,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 24,
+    margin: 20,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+    color: COLORS.TEXT_PRIMARY,
+  },
+  modalText: {
+    marginBottom: 24,
+    color: COLORS.TEXT_SECONDARY,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
   },
 });
